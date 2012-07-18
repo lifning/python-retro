@@ -1,0 +1,5 @@
+*.cpp
+*.so
+*.pyc
+build
+old
