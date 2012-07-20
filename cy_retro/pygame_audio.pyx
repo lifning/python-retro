@@ -9,6 +9,7 @@ from stdio cimport *
 from stdlib cimport memcpy
 
 from pygame import mixer
+from retro_globals import HACK_need_audio_sample
 
 cdef Mix_Chunk* sdl_mixchunk = NULL
 cdef object pycb_audbatch = lambda sound: None
@@ -52,11 +53,23 @@ cdef size_t sdl_audio_sample_batch(int16_t* data, size_t frames) nogil:
 
 	return frames
 
+cdef void sdl_audio_sample(int16_t left, int16_t right) nogil:
+	cdef int16_t data[2]
+	data[0] = left
+	data[1] = right
+	sdl_audio_sample_batch(<int16_t*>&(data), 1)
+
+
+
 cpdef set_audio_sample_internal(EmulatedSystem core):
 	""" Sets up an internal callback to play sound with SDL_mixer. """
 	if not mixer.get_init():
 		pygame_mixer_init(core)
-	core.llw.set_audio_sample_batch(sdl_audio_sample_batch)
+	if core.name in HACK_need_audio_sample:
+		print core.name, 'cannot use audio_sample_batch, wrapping it with audio_sample...'
+		core.llw.set_audio_sample(sdl_audio_sample)
+	else:
+		core.llw.set_audio_sample_batch(sdl_audio_sample_batch)
 
 
 # broken:

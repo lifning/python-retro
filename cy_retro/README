@@ -6,6 +6,5 @@ To build the libraries, run:
 	python2 setup.py build_ext
 
 Currently, the code works for some cores and segfaults on others.
-Known to work with: fceu, gambatte, snes9x
-Known NOT to work with: bnes, bsnes, genplus, meteor, vba
+Known NOT to work with bsnes-{accuracy,compat,performance}.
 

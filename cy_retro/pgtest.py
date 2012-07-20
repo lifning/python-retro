@@ -11,8 +11,8 @@ def printrepr(arg):
 	print repr(arg)
 
 #def main():
-core = C.EmulatedSystem('/usr/lib/libretro/libretro-fceu.so')
-core.load_game_normal(path='/home/lifning/Hack/Optiness/data/smb.nes')
+core = C.EmulatedSystem('/usr/lib/libretro/libretro-snes9x.so')
+core.load_game_normal(path='/home/lifning/Hack/Optiness/data/smw.sfc')
 
 screen = pgvid.pygame_display_set_mode(core, False)
 pgaud.pygame_mixer_init(core)

@@ -5,6 +5,8 @@ from dlfcn cimport *
 from stdio cimport *
 from stdlib cimport *
 
+from retro_globals import HACK_need_init, HACK_need_audio_sample
+
 cdef bool debug = True
 
 cdef void null_video_refresh(void* data, unsigned width, unsigned height, size_t pitch) nogil:
@@ -79,13 +81,13 @@ cdef class EmulatedSystem:
 	def __cinit__(self, char* libpath):
 		# todo: move libpath to a temp file and load that, for multithread
 		self.llw = LowLevelWrapper(libpath)
-		self.llw.init()
-		self.set_null_callbacks() # TODO: not assume this?
-		# is it okay to assign an audio_sample_batch and replace it with an
-		# audio_sample afterward?
 
 	def __init__(self, char* libpath):
-		self._loaded_cheats = {} 
+		self.name = self.get_library_info()['name']
+		if self.name in HACK_need_init:
+			self.llw.init()
+		self.set_null_callbacks()
+		self._loaded_cheats = {}
 
 	def __dealloc__(self):
 		if self.llw and not self.llw.error:
@@ -323,9 +325,10 @@ cdef class EmulatedSystem:
 
 	cdef public void set_null_callbacks(self):
 		self.llw.set_video_refresh(null_video_refresh)
-		## this would be less performant i think, due to more function calls:
-		#self.llw.set_audio_sample(null_audio_sample)
-		self.llw.set_audio_sample_batch(null_audio_sample_batch)
+		if self.name in HACK_need_audio_sample:
+			self.llw.set_audio_sample(null_audio_sample)
+		else:
+			self.llw.set_audio_sample_batch(null_audio_sample_batch)
 		self.llw.set_input_poll(null_input_poll)
 		self.llw.set_input_state(null_input_state)
 
