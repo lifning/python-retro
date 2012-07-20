@@ -1,31 +1,9 @@
 #cython: boundscheck=False
 #cython: cdivision=True
 
-cdef extern from 'dlfcn.h':
-	void *dlopen(char *filename, int flag)
-	char *dlerror()
-	void *dlsym(void *handle, char *symbol)
-	int dlclose(void *handle)
-
-	unsigned RTLD_LAZY
-	unsigned RTLD_NOW
-	unsigned RTLD_NOLOAD
-	unsigned RTLD_DEEPBIND
-	unsigned RTLD_GLOBAL
-	unsigned RTLD_NODELETE
-
-cdef extern from 'stdio.h':
-	int puts(char* s) nogil
-	int printf(char *format, ...) nogil
-	int snprintf(char *str, size_t size, char *format, ...) nogil
-
-cdef extern from 'stdlib.h':
-	void free(void* ptr) nogil
-	void* malloc(size_t size) nogil
-	void* realloc(void* ptr, size_t size) nogil
-
-cdef extern from 'string.h':
-	void *memcpy(void *dest, void *src, size_t n) nogil
+from dlfcn cimport *
+from stdio cimport *
+from stdlib cimport *
 
 cdef bool debug = True
 
@@ -60,7 +38,8 @@ cdef class LowLevelWrapper:
 	def __cinit__(self, char *libpath):
 		self.handle = dlopen(libpath, RTLD_LAZY)
 		self.error = dlerror()
-		if self.error or not self.handle:  return
+		if self.error or not self.handle:
+			raise Exception
 
 		self.set_environment = <set_environment_t> dlsym(self.handle, 'retro_set_environment')
 		self.set_video_refresh = <set_video_refresh_t> dlsym(self.handle, 'retro_set_video_refresh')
@@ -89,31 +68,21 @@ cdef class LowLevelWrapper:
 		self.get_memory_size = <get_memory_size_t> dlsym(self.handle, 'retro_get_memory_size')
 
 		self.error = dlerror()
-		if not self.error:
-			self.init()
-			self.set_null_callbacks() # TODO: not assume this?
-			# is it okay to assign an audio_sample_batch and replace it with an
-			# audio_sample afterward?
+		if self.error:
+			raise Exception
 
 	def __dealloc__(self):
 		dlclose(self.handle)
-
-	cdef public void set_null_callbacks(self):
-		global debug
-		self.set_video_refresh(null_video_refresh)
-		## this would be less performant i think, due to more function calls:
-		#self.set_audio_sample(null_audio_sample)
-		self.set_audio_sample_batch(null_audio_sample_batch)
-		self.set_input_poll(null_input_poll)
-		self.set_input_state(null_input_state)
 
 
 cdef class EmulatedSystem:
 	def __cinit__(self, char* libpath):
 		# todo: move libpath to a temp file and load that, for multithread
 		self.llw = LowLevelWrapper(libpath)
-		if not self.llw.error:
-			self.llw.init()
+		self.llw.init()
+		self.set_null_callbacks() # TODO: not assume this?
+		# is it okay to assign an audio_sample_batch and replace it with an
+		# audio_sample afterward?
 
 	def __init__(self, char* libpath):
 		self._loaded_cheats = {} 
@@ -351,7 +320,14 @@ cdef class EmulatedSystem:
 	cpdef close(self):
 		""" Release all resources associated with this library instance. """
 		self.llw.deinit()
-		self.llw.set_null_callbacks()
+
+	cdef public void set_null_callbacks(self):
+		self.llw.set_video_refresh(null_video_refresh)
+		## this would be less performant i think, due to more function calls:
+		#self.llw.set_audio_sample(null_audio_sample)
+		self.llw.set_audio_sample_batch(null_audio_sample_batch)
+		self.llw.set_input_poll(null_input_poll)
+		self.llw.set_input_state(null_input_state)
 
 
 

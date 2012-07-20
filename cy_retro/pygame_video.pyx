@@ -1,6 +1,6 @@
 from SDL cimport *
 from pygame cimport *
-from cy_retro cimport *
+from core cimport *
 
 from pygame import Surface, display
 

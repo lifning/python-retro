@@ -9,7 +9,7 @@ from Cython.Distutils import build_ext
 import numpy # to get includes
 
 mods = [
-	Extension("cy_retro", ["cy_retro.pyx", "cy_retro.pxd"],
+	Extension("core", ["core.pyx", "core.pxd"],
 		libraries=["dl"],
 		language='C++',
     ),
