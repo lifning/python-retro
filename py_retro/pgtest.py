@@ -4,21 +4,21 @@ import pygame
 import core as C
 import pygame_video as pgvid
 import pygame_audio as pgaud
-#import pygame_input as pginp
+import pygame_input as pginp
 
 def printrepr(arg):
 	print repr(arg)
 
 #def main():
-core = C.EmulatedSystem('/usr/lib/libretro/libretro-snes9x.so')
-core.load_game_normal(path='/home/lifning/Hack/Optiness/data/smw.sfc')
+core = C.EmulatedSystem('/usr/lib/libretro/libretro-fceu.so')
+core.load_game_normal(path='/home/lifning/Hack/Optiness/data/smb.nes')
 
 screen = pgvid.pygame_display_set_mode(core, False)
 pgaud.pygame_mixer_init(core)
 
 pgvid.set_video_refresh_surface(core, screen)
 pgaud.set_audio_sample_internal(core)
-#pginp.set_input_poll_joystick(core)
+pginp.set_input_poll_joystick(core)
 
 # run each frame until closed.
 running = True

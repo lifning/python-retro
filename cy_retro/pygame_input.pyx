@@ -48,7 +48,7 @@ cdef unsigned num_players = 0
 
 cdef void sdl_input_poll() nogil:
 	global padcache, joy_mappings, sdl_joy, num_players
-	cdef int player, m, idx, hat
+	cdef int player, m, hat
 
 	SDL_JoystickUpdate()
 	for player in xrange(num_players):
@@ -69,7 +69,10 @@ cdef void sdl_input_poll() nogil:
 					if padcache[player][m] * joy_mappings[player][m].extra < 0:
 						padcache[player][m] = 0
 				elif joy_mappings[player][m].map_type == MAP_HAT:
-					hat = SDL_JoystickGetHat(sdl_joy[player], 0)
+					hat = SDL_JoystickGetHat(
+						sdl_joy[player],
+						joy_mappings[player][m].map_index
+					)
 					padcache[player][m] = <bool>(hat & joy_mappings[player][m].extra)
 
 cdef int16_t sdl_input_state(unsigned port, unsigned device, unsigned index, unsigned id) nogil:
