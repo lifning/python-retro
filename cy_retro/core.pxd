@@ -231,6 +231,7 @@ cdef class EmulatedSystem:
 		retro_system_av_info av_info
 		bool _game_loaded
 	cdef dict _loaded_cheats
+	cdef str name
 	cpdef _require_game_not_loaded(self)
 	cpdef _require_game_loaded(self)
 	cpdef set_controller_port_device(self, unsigned port, unsigned device)
