@@ -31,6 +31,8 @@ def null_environment(cmd, data):
 	if debug: print('environment')
 	return False
 
+
+
 class LowLevelWrapper(ctypes.CDLL):
 	def __init__(self, libpath):
 		ctypes.CDLL.__init__(self, libpath)
@@ -149,7 +151,10 @@ class EmulatedSystem:
 	def __init__(self, libpath):
 		# todo: move libpath to a temp file and load that, for multithread
 		self.llw = LowLevelWrapper(libpath)
-		self.llw.init() # initialize libretro
+		self.name = self.get_library_info()['name']
+		# initialize libretro.  apparently some cores crash when you call init.
+		if self.name in HACK_need_init:
+			self.llw.init()
 		self._reset_vars()
 		self.set_null_callbacks() # TODO: not assume this?
 		# is it okay to assign an audio_sample_batch and replace it with an
@@ -238,7 +243,6 @@ class EmulatedSystem:
 		Before this function returns, the registered callbacks will be called
 		at least once each.
 		Requires that a game be loaded.
-		WARNING: for performance reasons, an exception isn't raised.
 		"""
 		self._require_game_loaded()
 		while frames > 0:
@@ -458,10 +462,13 @@ class EmulatedSystem:
 
 	def set_null_callbacks(self):
 		self.set_video_refresh_cb(null_video_refresh)
-		self.set_audio_sample_batch_cb(null_audio_sample_batch)
+		if self.name in HACK_need_audio_sample:
+			self.set_audio_sample_cb(null_audio_sample)
+		else:
+			self.set_audio_sample_batch_cb(null_audio_sample_batch)
 		self.set_input_poll_cb(null_input_poll)
 		self.set_input_state_cb(null_input_state)
-		self.set_environment_cb(null_input_state)
+		self.set_environment_cb(null_environment)
 
 
 
