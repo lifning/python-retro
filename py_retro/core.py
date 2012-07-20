@@ -421,8 +421,15 @@ class EmulatedSystem:
 			"right" is an int16 that specifies the right audio channel volume.
 		The callback should return nothing.
 		"""
-		self._audio_sample_wrapper = retro_audio_sample_t(callback)
-		self.llw.set_audio_sample(self._audio_sample_wrapper)
+		if self.name in HACK_need_audio_sample_batch:
+			def sample_in_terms_of_batch(data, frames):
+				for i in xrange(frames):
+					callback(data[i*2], data[i*2+1])
+				return frames
+			self.set_audio_sample_batch_cb(sample_in_terms_of_batch)
+		else:
+			self._audio_sample_wrapper = retro_audio_sample_t(callback)
+			self.llw.set_audio_sample(self._audio_sample_wrapper)
 
 	def set_audio_sample_batch_cb(self, callback):
 		""" Sets the callback that will handle updated audio frames.
@@ -431,8 +438,21 @@ class EmulatedSystem:
 			"frames" is a size_t that specifies the number of {l,r} samples.
 		The callback should return nothing.
 		"""
-		self._audio_sample_batch_wrapper = retro_audio_sample_batch_t(callback)
-		self.llw.set_audio_sample_batch(self._audio_sample_batch_wrapper)
+		if self.name in HACK_need_audio_sample:
+			def batch_in_terms_of_sample(left, right):
+				f = batch_in_terms_of_sample
+				f.arr[f.i*2] = left
+				f.arr[f.i*2+1] = right
+				f.i += 1
+				if f.i >= 512:
+					res = callback(f.arr, f.i)
+					f.i -= res if res else f.i
+			batch_in_terms_of_sample.arr = (ctypes.c_int16*(512*2))()
+			batch_in_terms_of_sample.i = 0
+			self.set_audio_sample_cb(batch_in_terms_of_sample)
+		else:
+			self._audio_sample_batch_wrapper = retro_audio_sample_batch_t(callback)
+			self.llw.set_audio_sample_batch(self._audio_sample_batch_wrapper)
 
 	def set_input_poll_cb(self, callback):
 		""" Sets the callback that will check for updated input events.

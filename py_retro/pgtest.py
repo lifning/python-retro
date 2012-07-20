@@ -10,14 +10,14 @@ def printrepr(arg):
 	print repr(arg)
 
 #def main():
-core = C.EmulatedSystem('/usr/lib/libretro/libretro-genplus.so')
-core.load_game_normal(path='/home/lifning/Hack/Optiness/data/sonic.gen')
+core = C.EmulatedSystem('/usr/lib/libretro/libretro-snes9x.so')
+core.load_game_normal(path='/home/lifning/Hack/Optiness/data/smw.sfc')
 
 screen = pgvid.pygame_display_set_mode(core, False)
 pgaud.pygame_mixer_init(core)
 
 pgvid.set_video_refresh_surface(core, screen)
-pgaud.set_audio_sample_internal(core)
+pgaud.set_audio_sample_cb(core)
 pginp.set_input_poll_joystick(core)
 
 # run each frame until closed.
