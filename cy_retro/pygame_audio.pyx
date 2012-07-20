@@ -3,10 +3,10 @@
 
 from SDL cimport *
 from pygame cimport *
-from cy_retro cimport *
+from core cimport *
 
-cdef extern from 'string.h':
-	void *memcpy(void *dest, void *src, size_t n) nogil
+from stdio cimport *
+from stdlib cimport memcpy
 
 from pygame import mixer
 
@@ -18,10 +18,6 @@ cdef int currentbuf = 0
 cdef int writepos = 0
 
 cdef inline int int_min(int a, int b) nogil: return a if a <= b else b
-
-cdef extern from 'stdio.h':
-	int puts(char* s) nogil
-	int printf(char *format, ...) nogil
 
 cpdef pygame_mixer_init(EmulatedSystem core):
 	mixer.init(
@@ -63,7 +59,7 @@ cpdef set_audio_sample_internal(EmulatedSystem core):
 	core.llw.set_audio_sample_batch(sdl_audio_sample_batch)
 
 
-
+# broken:
 
 cdef size_t sdl_audio_sample_batch_with_pycb(int16_t* data, size_t frames):
 	global pycb_audbatch

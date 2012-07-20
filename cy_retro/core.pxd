@@ -224,7 +224,6 @@ cdef class LowLevelWrapper:
 
 		get_memory_data_t get_memory_data
 		get_memory_size_t get_memory_size
-	cdef public void set_null_callbacks(self)
 
 cdef class EmulatedSystem:
 	cdef nogil:
@@ -244,6 +243,7 @@ cdef class EmulatedSystem:
 	cpdef get_library_info(self)
 	cpdef get_av_info(self)
 	cpdef close(self)
+	cdef public void set_null_callbacks(self)
 
 cdef class EmulatedSNES(EmulatedSystem):
 	pass

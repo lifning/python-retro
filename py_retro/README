@@ -1,0 +1,11 @@
+Python bindings to libretro API, implemented in Cython.
+Attempting to match the old python-snes API as closely as possible.
+The code here is currently far from organized or complete, but is usable.
+
+To build the libraries, run:
+	python2 setup.py build_ext
+
+Currently, the code works for some cores and segfaults on others.
+Known to work with: fceu, gambatte, snes9x
+Known NOT to work with: bnes, bsnes, genplus, meteor, vba
+
