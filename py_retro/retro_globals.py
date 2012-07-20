@@ -1,4 +1,11 @@
-import ctypes
+import ctypes # for type definitions further below
+
+
+# workarounds
+
+HACK_need_init = [ 'bNES', 'gambatte', 'SNES9x' ]
+HACK_need_audio_sample_batch = [ 'FCEUmm', 'gambatte', 'Genesis Plus GX', 'SNES9x', 'VBA Next' ]
+HACK_need_audio_sample = [ 'bNES', 'bSNES', 'Meteor GBA' ]
 
 
 # constants
