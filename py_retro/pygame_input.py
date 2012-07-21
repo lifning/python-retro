@@ -50,23 +50,21 @@ def input_poll_cb():
 	for player in xrange(num_players):
 		if sdl_joy[player]:
 			for m in xrange(MAX_MAPPINGS):
+                                idx = joy_mappings[player][m].map_index
 				if joy_mappings[player][m].map_type == MAP_NONE:
 					continue
 				elif joy_mappings[player][m].map_type == MAP_BTN:
-					padcache[player][m] = int(sdl_joy[player].get_button(
-						joy_mappings[player][m].map_index
-					))
+                                        if 0 <= idx < sdl_joy[player].get_numbuttons():
+                                                padcache[player][m] = int(sdl_joy[player].get_button(idx))
 				elif joy_mappings[player][m].map_type == MAP_AXIS:
-					padcache[player][m] = int(32767*sdl_joy[player].get_axis(
-						joy_mappings[player][m].map_index
-					))
-					if padcache[player][m] * joy_mappings[player][m].extra < 0:
-						padcache[player][m] = 0
+                                        if 0 <= idx < sdl_joy[player].get_numaxes():
+                                                padcache[player][m] = int(32767*sdl_joy[player].get_axis(idx))
+                                                if padcache[player][m] * joy_mappings[player][m].extra < 0:
+                                                        padcache[player][m] = 0
 				elif joy_mappings[player][m].map_type == MAP_HAT:
-					hat = sdl_joy[player].get_hat(
-						joy_mappings[player][m].map_index
-					)
-					padcache[player][m] = int(hat == joy_mappings[player][m].extra)
+                                        if 0 <= idx < sdl_joy[player].get_numhats():
+                                                hat = sdl_joy[player].get_hat(idx)
+                                                padcache[player][m] = int(hat == joy_mappings[player][m].extra)
 
 def input_state_cb(port, device, index, id):
 	global padcache
