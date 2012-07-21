@@ -1,5 +1,7 @@
 *.cpp
 *.so
 *.pyc
+*.pyd
+*.log
 build
 old

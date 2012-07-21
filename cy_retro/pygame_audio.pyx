@@ -57,7 +57,7 @@ cdef void sdl_audio_sample(int16_t left, int16_t right) nogil:
 	cdef int16_t data[2]
 	data[0] = left
 	data[1] = right
-	sdl_audio_sample_batch(<int16_t*>&(data), 1)
+	sdl_audio_sample_batch(<int16_t*>data, 1)
 
 
 
