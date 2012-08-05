@@ -7,7 +7,7 @@ from stdlib cimport *
 
 from retro_globals import HACK_need_init, HACK_need_audio_sample
 
-cdef bool debug = True
+cdef bool debug = False
 
 cdef void null_video_refresh(void* data, unsigned width, unsigned height, size_t pitch) nogil:
 	global debug
