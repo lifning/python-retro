@@ -33,6 +33,10 @@ mods = [
 		libraries = ["SDL"],
 		language = 'C++',
 	),
+	Extension("cy_retro.simple_input",
+		sources = ["cy_retro/simple_input.pyx"],
+		language = 'C++',
+	),
 ]
 
 if __name__ == "__main__":
