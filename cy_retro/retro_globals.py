@@ -64,6 +64,7 @@ MEMORY_MASK       = 0xff
 MEMORY_SAVE_RAM   = 0
 MEMORY_RTC        = 1
 MEMORY_SYSTEM_RAM = 2
+MEMORY_WRAM = 2 # backwards compat
 MEMORY_VIDEO_RAM  = 3
 
 MEMORY_SNES_BSX_RAM            = ((1 << 8) | MEMORY_SAVE_RAM)
@@ -91,4 +92,8 @@ ENVIRONMENT_SET_PIXEL_FORMAT      = 10
 
 PIXEL_FORMAT_0RGB1555 = 0
 PIXEL_FORMAT_XRGB8888 = 1
+
+# backwards compat:
+PORT_1 = 0
+PORT_2 = 1
 

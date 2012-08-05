@@ -58,3 +58,7 @@ cpdef pygame_display_set_mode(EmulatedSystem core, bool use_max=True):
 	key = 'max_size' if use_max else 'base_size'
 	return display.set_mode(core.get_av_info()[key])
 
+cpdef pygame_Surface(EmulatedSystem core, bool use_max=True):
+	key = 'max_size' if use_max else 'base_size'
+	return Surface(core.get_av_info()[key])
+

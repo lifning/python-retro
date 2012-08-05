@@ -11,7 +11,7 @@ IF UNAME_SYSNAME != "Windows":
 		unsigned RTLD_DEEPBIND
 		unsigned RTLD_GLOBAL
 		unsigned RTLD_NODELETE
-ELSE:
+ELIF UNAME_SYSNAME == "Windows": # for some reason "ELSE" alone didn't cut it?
 	cdef extern from "windows.h" nogil:
 		ctypedef void* HMODULE
 		void *LoadLibrary(char*)
@@ -29,3 +29,4 @@ ELSE:
 		RTLD_DEEPBIND = 0
 		RTLD_GLOBAL = 0
 		RTLD_NODELETE = 0
+
