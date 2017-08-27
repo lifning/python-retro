@@ -40,7 +40,7 @@ def bsv_decode(filenameOrHandle):
     yield an infinite stream of zeroes.
     """
     # Get ourselves a handle to read from.
-    if isinstance(filenameOrHandle, basestring):
+    if isinstance(filenameOrHandle, str):
         handle = open(filenameOrHandle, 'rb')
     else:
         handle = filenameOrHandle
@@ -85,9 +85,9 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
     generator = bsv_decode(filename)
 
     def wrapper(port, device, index, id):
-        return generator.next()
+        return next(generator)
 
-    (serializerVersion, cartCRC, saveStateData) = generator.next()
+    (serializerVersion, cartCRC, saveStateData) = next(generator)
 
     if expectedCartCRC is not None:
         raise CartMismatch("Movie is for cart with CRC32 %r, expected %r"

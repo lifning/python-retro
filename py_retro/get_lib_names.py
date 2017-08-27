@@ -1,6 +1,6 @@
 from sys import argv
-import core as C
+from . import core as C
 
 for l in argv[1:]:
     es = C.EmulatedSystem(l)
-    print l, es.get_library_info()['name']
+    print(l, es.get_library_info()['name'])
