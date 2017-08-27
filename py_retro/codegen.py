@@ -16,4 +16,4 @@ get_memory_data  get_memory_size
 '''.split()
 
 for s in varnames:
-	print "self.{} = self.retro_{}".format(s,s)
+    print "self.{} = self.retro_{}".format(s,s)

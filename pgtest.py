@@ -1,41 +1,35 @@
 #!/usr/bin/python2
 import pygame
+import py_retro
+import sys
 
-import py_retro as retro
-pgvid = retro.pygame_video
-pgaud = retro.pygame_audio
-pginp = retro.pygame_input
+libpath, rompath = sys.argv[1:3]
 
-from sys import argv
-libpath, rompath = argv[1:3]
-
-def printrepr(arg):
-	print repr(arg)
 
 def main():
-	es = retro.core.EmulatedSystem(libpath)
-	es.load_game_normal(path=rompath)
+    es = py_retro.core.EmulatedSystem(libpath)
+    es.load_game_normal(path=rompath)
 
-	screen = pgvid.pygame_display_set_mode(es, False)
-	pgaud.pygame_mixer_init(es)
+    screen = py_retro.pygame_video.pygame_display_set_mode(es, False)
+    py_retro.pygame_audio.pygame_mixer_init(es)
 
-	pgvid.set_video_refresh_surface(es, screen)
-	pgaud.set_audio_sample_internal(es)
-	pginp.set_input_poll_joystick(es)
+    py_retro.pygame_video.set_video_refresh_surface(es, screen)
+    py_retro.portaudio_audio.set_audio_sample_internal(es)
+    py_retro.pygame_input.set_input_poll_joystick(es)
 
-	# run each frame until closed.
-	running = True
-	fps = es.get_av_info()['fps'] or 60
-	clock = pygame.time.Clock()
+    # run each frame until closed.
+    running = True
+    fps = es.get_av_info()['fps'] or 60
+    clock = pygame.time.Clock()
 
-	while running:
-		es.run()
-		pygame.display.flip()
-		clock.tick(fps)
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				running = False
+    while running:
+        es.run()
+        pygame.display.flip()
+        clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
 
 if __name__ == "__main__":
-	main()
-
+    main()
