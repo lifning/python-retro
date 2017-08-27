@@ -11,7 +11,6 @@ def main():
     es.load_game_normal(path=rompath)
 
     screen = py_retro.pygame_video.pygame_display_set_mode(es, False)
-    py_retro.pygame_audio.pygame_mixer_init(es)
 
     py_retro.pygame_video.set_video_refresh_surface(es, screen)
     py_retro.portaudio_audio.set_audio_sample_internal(es)
