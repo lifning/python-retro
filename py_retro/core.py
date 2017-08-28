@@ -382,9 +382,9 @@ class EmulatedSystem:
         self.llw.get_system_info(ctypes.byref(info))
         return {
             'api': int(self.llw.api_version()),
-            'name': str(info.library_name),
-            'ver': str(info.library_version),
-            'exts': str(info.valid_extensions),
+            'name': info.library_name.decode("utf-8"),
+            'ver': info.library_version.decode("utf-8"),
+            'exts': info.valid_extensions.decode("utf-8"),
         }
 
     def get_av_info(self):
