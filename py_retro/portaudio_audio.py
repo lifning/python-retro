@@ -12,7 +12,7 @@ from .retro_globals import HACK_need_audio_sample_batch
 g_pyaudio = None
 g_stream = None
 
-g_sndlog = ''
+g_sndlog = b''
 g_consumed = 0
 
 
