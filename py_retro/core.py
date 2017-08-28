@@ -1,5 +1,7 @@
 import ctypes
 
+import collections
+
 from .retro_globals import *
 
 debug = False
@@ -102,7 +104,9 @@ class LowLevelWrapper(ctypes.CDLL):
         self.retro_load_game.argtypes = [ctypes.POINTER(retro_game_info)]
 
         self.retro_load_game_special.restype = ctypes.c_bool
-        self.retro_load_game_special.argtypes = [ctypes.c_uint, ctypes.POINTER(retro_game_info), ctypes.c_size_t]
+        self.retro_load_game_special.argtypes = [ctypes.c_uint,
+                                                 ctypes.POINTER(retro_game_info),
+                                                 ctypes.c_size_t]
 
         self.retro_unload_game.restype = None
         self.retro_unload_game.argtypes = []
@@ -153,6 +157,7 @@ class EmulatedSystem:
     _environment_wrapper = None
 
     def __init__(self, libpath):
+        self.memory_map = collections.OrderedDict()
         self._game_loaded = False
         # todo: move libpath to a temp file and load that, for multithread
         self.llw = LowLevelWrapper(libpath)
@@ -182,6 +187,28 @@ class EmulatedSystem:
         self.llw.cheat_reset()
         for index, (code, enabled) in list(self._loaded_cheats.items()):
             self.llw.cheat_set(index, enabled, code)
+
+    def _find_memory_bank(self, offset, length):
+        assert self.memory_map
+        for space, pointer in self.memory_map.items():
+            begin, end = space
+            if begin <= offset < end:
+                if offset + length > end:
+                    raise IndexError(f'({hex(offset)}, {hex(length)}) '
+                                     f'overruns ({hex(begin)}, {hex(end)}) memory bank')
+                return space, pointer
+        raise IndexError(f'({hex(offset)}, {hex(length)}) '
+                         f'address range not found in any memory map region')
+
+    def peek_memory_region(self, offset, length):
+        space, pointer = self._find_memory_bank(offset, length)
+        buf = ctypes.create_string_buffer(length)
+        ctypes.memmove(buf, pointer + offset - space[0], length)
+        return buf.raw
+
+    def poke_memory_region(self, offset, data):
+        space, pointer = self._find_memory_bank(offset, len(data))
+        ctypes.memmove(pointer + offset - space[0], data, len(data))
 
     def memory_to_string(self, mem_type):
         """
@@ -449,6 +476,7 @@ class EmulatedSystem:
         The callback should return nothing.
         """
         if self.name in HACK_need_audio_sample:
+            # noinspection PyUnresolvedReferences
             def batch_in_terms_of_sample(left, right):
                 f = batch_in_terms_of_sample
                 f.arr[f.i * 2] = left
@@ -511,7 +539,20 @@ class EmulatedSystem:
                 self.env_props['pixel_format'] = 'xrgb8888'
                 return True
             return False
-
+        elif cmd == ENVIRONMENT_SET_MEMORY_MAPS:
+            # FIXME: partial implementation good enough for Gambatte
+            maps = ctypes.cast(data, ctypes.POINTER(retro_memory_map))
+            desc_list = []
+            for i in range(maps[0].num_descriptors):
+                desc = maps[0].descriptors[i]
+                length = desc.len
+                if desc.select:  # FIXME: hack for oversized SRAM eating addr space...
+                    length = (~desc.select + 1) & 0xffffffff
+                    print(hex(length))
+                desc_list.append(((desc.start, desc.start + length), desc.ptr))
+            desc_list.sort()
+            self.memory_map = collections.OrderedDict(desc_list)
+            return True
         return False
 
     def set_null_callbacks(self):
@@ -523,15 +564,3 @@ class EmulatedSystem:
             self.set_audio_sample_batch_cb(null_audio_sample_batch)
         self.set_input_poll_cb(null_input_poll)
         self.set_input_state_cb(null_input_state)
-
-
-# backwards-compat with old python-snes api...
-class EmulatedSNES(EmulatedSystem):
-    def load_cartridge_normal(self, *args):
-        return self.load_game_normal(*args)
-
-    def _require_cart_loaded(self):
-        return self._require_game_loaded()
-
-    def _require_cart_not_loaded(self):
-        return self._require_game_not_loaded()
