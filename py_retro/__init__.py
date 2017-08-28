@@ -1,12 +1,12 @@
-import core
+from . import core
 
-import pygame_video
+from . import pygame_video
 
-import portaudio_audio
-import wave_audio
+from . import portaudio_audio
+from . import wave_audio
 
-import pygame_input
-import simple_input
+from . import pygame_input
+from . import simple_input
 
-from retro_globals import *
+from .retro_globals import *
 

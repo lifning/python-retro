@@ -7,7 +7,7 @@ import ctypes
 import struct
 import time
 
-from retro_globals import HACK_need_audio_sample_batch
+from .retro_globals import HACK_need_audio_sample_batch
 
 g_pyaudio = None
 g_stream = None

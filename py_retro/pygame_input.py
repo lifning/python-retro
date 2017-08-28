@@ -1,6 +1,6 @@
 import pygame
 
-from retro_globals import *
+from .retro_globals import *
 
 MAP_NONE = 0
 MAP_BTN = 1
@@ -40,8 +40,8 @@ hatdirs = {
 MAX_PLAYERS = 8
 MAX_MAPPINGS = 20
 
-padcache = [[0] * MAX_MAPPINGS for i in xrange(MAX_PLAYERS)]
-joy_mappings = [[joymapping() for i in xrange(MAX_MAPPINGS)] for j in xrange(MAX_PLAYERS)]
+padcache = [[0] * MAX_MAPPINGS for i in range(MAX_PLAYERS)]
+joy_mappings = [[joymapping() for i in range(MAX_MAPPINGS)] for j in range(MAX_PLAYERS)]
 sdl_joy = [None] * MAX_PLAYERS
 num_players = 0
 
@@ -49,9 +49,9 @@ num_players = 0
 def input_poll_cb():
     global padcache, joy_mappings, sdl_joy, num_players
 
-    for player in xrange(num_players):
+    for player in range(num_players):
         if sdl_joy[player]:
-            for m in xrange(MAX_MAPPINGS):
+            for m in range(MAX_MAPPINGS):
                 idx = joy_mappings[player][m].map_index
                 if joy_mappings[player][m].map_type == MAP_NONE:
                     continue
@@ -103,7 +103,7 @@ def set_input_poll_joystick(core, mapping=None, joyindex=0, player=0):
 
     if player >= MAX_PLAYERS: return
 
-    for k, v in mapping.items():
+    for k, v in list(mapping.items()):
         if type(k) is tuple:
             stick, axis = k
             k = 16 | (stick << 1) | axis  # hack!

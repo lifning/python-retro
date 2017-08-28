@@ -1,7 +1,7 @@
 MAX_PLAYERS = 8
 MAX_MAPPINGS = 20
 
-padcache = [[0] * MAX_MAPPINGS for i in xrange(MAX_PLAYERS)]
+padcache = [[0] * MAX_MAPPINGS for i in range(MAX_PLAYERS)]
 
 
 def simple_input_poll():
@@ -25,6 +25,6 @@ def set_state(port, device, index, id, state):
 
 def set_state_digital(port, state):
     global padcache
-    for id in xrange(16):
+    for id in range(16):
         padcache[port][id] = state & 1
         state >>= 1
