@@ -1,6 +1,6 @@
 import ctypes
 
-from retro_globals import *
+from .retro_globals import *
 
 debug = False
 
@@ -8,19 +8,19 @@ debug = False
 def null_video_refresh(data, width, height, pitch):
     global debug
     if debug:
-        print('video_refresh({}, {}, {}, {})'.format(data, width, height, pitch))
+        print(('video_refresh({}, {}, {}, {})'.format(data, width, height, pitch)))
 
 
 def null_audio_sample(left, right):
     global debug
     if debug:
-        print('audio_sample({}, {})'.format(left, right))
+        print(('audio_sample({}, {})'.format(left, right)))
 
 
 def null_audio_sample_batch(data, frames):
     global debug
     if debug:
-        print('audio_sample_batch({}, {})'.format(data, frames))
+        print(('audio_sample_batch({}, {})'.format(data, frames)))
     return frames
 
 
@@ -33,7 +33,7 @@ def null_input_poll():
 def null_input_state(port, device, index, id_):
     global debug
     if debug:
-        print('input_state({}, {}, {}, {})'.format(port, device, index, id_))
+        print(('input_state({}, {}, {}, {})'.format(port, device, index, id_)))
     return 0
 
 
@@ -180,7 +180,7 @@ class EmulatedSystem:
         Reloads cheats in the emulated console from the _loaded_cheats variable.
         """
         self.llw.cheat_reset()
-        for index, (code, enabled) in self._loaded_cheats.items():
+        for index, (code, enabled) in list(self._loaded_cheats.items()):
             self.llw.cheat_set(index, enabled, code)
 
     def memory_to_string(self, mem_type):
@@ -382,9 +382,9 @@ class EmulatedSystem:
         self.llw.get_system_info(ctypes.byref(info))
         return {
             'api': int(self.llw.api_version()),
-            'name': str(info.library_name),
-            'ver': str(info.library_version),
-            'exts': str(info.valid_extensions),
+            'name': info.library_name.decode("utf-8"),
+            'ver': info.library_version.decode("utf-8"),
+            'exts': info.valid_extensions.decode("utf-8"),
         }
 
     def get_av_info(self):
@@ -432,7 +432,7 @@ class EmulatedSystem:
         """
         if self.name in HACK_need_audio_sample_batch:
             def sample_in_terms_of_batch(data, frames):
-                for i in xrange(frames):
+                for i in range(frames):
                     callback(data[i * 2], data[i * 2 + 1])
                 return frames
 
@@ -493,7 +493,7 @@ class EmulatedSystem:
 
     def basic_environment(self, cmd, data):
         global debug
-        if debug: print('environment {}'.format(cmd))
+        if debug: print(('environment {}'.format(cmd)))
 
         if cmd == ENVIRONMENT_GET_CAN_DUPE:
             b_data = ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))

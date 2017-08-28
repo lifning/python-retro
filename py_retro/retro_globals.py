@@ -1,4 +1,4 @@
-from retro_ctypes import *
+from .retro_ctypes import *
 
 # workarounds
 
