@@ -548,7 +548,7 @@ class EmulatedSystem:
                 length = desc.len
                 if desc.select:  # FIXME: hack for oversized SRAM eating addr space...
                     length = (~desc.select + 1) & 0xffffffff
-                    print(hex(length))
+                    print(f'truncating {hex(desc.start)} from {hex(desc.len)} to {hex(length)}')
                 desc_list.append(((desc.start, desc.start + length), desc.ptr))
             desc_list.sort()
             self.memory_map = collections.OrderedDict(desc_list)
