@@ -90,3 +90,23 @@ class retro_game_info(ctypes.Structure):
         ("size", ctypes.c_size_t),
         ("meta", ctypes.c_char_p),
     ]
+
+
+class retro_memory_descriptor(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint64),
+        ("ptr", ctypes.c_void_p),
+        ("offset", ctypes.c_size_t),
+        ("start", ctypes.c_size_t),  # location in the emulated address space where mapping starts
+        ("select", ctypes.c_size_t),  # Which bits must be same as in 'start' for mapping to apply
+        ("disconnect", ctypes.c_size_t),  # set bits are not connected to memory chip's address pins
+        ("len", ctypes.c_size_t),
+        ("addrspace", ctypes.c_char_p),
+    ]
+
+
+class retro_memory_map(ctypes.Structure):
+    _fields_ = [
+        ("descriptors", ctypes.POINTER(retro_memory_descriptor)),
+        ("num_descriptors", ctypes.c_uint),
+    ]
