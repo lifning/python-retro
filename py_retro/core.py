@@ -1,6 +1,7 @@
 import ctypes
 
 import collections
+from .game_info_reader import GameInfoReader
 
 from .retro_globals import *
 
@@ -397,6 +398,7 @@ class EmulatedSystem:
 
         self.llw.load_game(ctypes.byref(gameinfo))
         self.llw.get_system_av_info(ctypes.byref(self.av_info))
+        self.gameinfo = GameInfoReader().get_info(data, self.name) # get useful info about the game from the rom's header
         self._game_loaded = True
 
         if sram:
