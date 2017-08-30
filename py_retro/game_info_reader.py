@@ -8,7 +8,7 @@ class GameInfoReader:
 
     def get_gbc_game_info(self, data):
         return {
-            'name': ctypes.string_at(data[0x134:0x143])
+            'name': ctypes.string_at(data[0x134:0x143]).decode('utf-8')
         }
 
     def get_info(self, romData, coreName):
