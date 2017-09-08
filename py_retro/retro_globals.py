@@ -2,7 +2,6 @@ from .retro_ctypes import *
 
 # workarounds
 
-HACK_need_init = ['bNES', 'Gambatte', 'SNES9x']
 HACK_need_audio_sample_batch = ['FCEUmm', 'Gambatte', 'Genesis Plus GX', 'SNES9x', 'VBA Next']
 HACK_need_audio_sample = ['bNES', 'bSNES', 'Meteor GBA']
 

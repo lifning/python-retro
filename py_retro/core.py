@@ -164,9 +164,7 @@ class EmulatedSystem:
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
         self.set_null_callbacks()
-        # initialize libretro.  apparently some cores crash when you call init.
-        if self.name in HACK_need_init:
-            self.llw.init()
+        self.llw.init()
         self._reset_vars()
 
     # is it okay to assign an audio_sample_batch and replace it with an
@@ -189,27 +187,28 @@ class EmulatedSystem:
         for index, (code, enabled) in list(self._loaded_cheats.items()):
             self.llw.cheat_set(index, enabled, code)
 
-    def _find_memory_bank(self, offset, length):
+    def _find_memory_bank(self, offset, length, bank_switch):
         assert self.memory_map
-        for space, pointer in self.memory_map.items():
-            begin, end = space
+        for (begin, end), pointer in self.memory_map.items():
             if begin <= offset < end:
                 if offset + length > end:
                     raise IndexError(f'({hex(offset)}, {hex(length)}) '
                                      f'overruns ({hex(begin)}, {hex(end)}) memory bank')
-                return space, pointer
+                bank_size = end - begin
+                relative_offset = offset - begin + (bank_size * bank_switch)
+                return pointer + relative_offset
         raise IndexError(f'({hex(offset)}, {hex(length)}) '
-                         f'address range not found in any memory map region')
+                         'address range not found in any memory map region')
 
-    def peek_memory_region(self, offset, length):
-        space, pointer = self._find_memory_bank(offset, length)
-        buf = ctypes.create_string_buffer(length)
-        ctypes.memmove(buf, pointer + offset - space[0], length)
-        return buf.raw
+    def peek_memory_region(self, offset, length, bank_switch=0):
+        pointer = self._find_memory_bank(offset, length, bank_switch)
+        buffer = ctypes.create_string_buffer(length)
+        ctypes.memmove(buffer, pointer, length)
+        return buffer.raw
 
-    def poke_memory_region(self, offset, data):
-        space, pointer = self._find_memory_bank(offset, len(data))
-        ctypes.memmove(pointer + offset - space[0], data, len(data))
+    def poke_memory_region(self, offset, data, bank_switch=0):
+        pointer = self._find_memory_bank(offset, len(data), bank_switch)
+        ctypes.memmove(pointer, data, len(data))
 
     def memory_to_string(self, mem_type):
         """
@@ -550,7 +549,8 @@ class EmulatedSystem:
                 length = desc.len
                 if desc.select:  # FIXME: hack for oversized SRAM eating addr space...
                     length = (~desc.select + 1) & 0xffffffff
-                    print(f'truncating {hex(desc.start)} from {hex(desc.len)} to {hex(length)}')
+                    print(f'truncating memory region {hex(desc.start)} from size {hex(desc.len)} '
+                          f'to {desc.len//length} banks of size {hex(length)}')
                 desc_list.append(((desc.start, desc.start + length), desc.ptr))
             desc_list.sort()
             self.memory_map = collections.OrderedDict(desc_list)
