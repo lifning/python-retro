@@ -158,14 +158,16 @@ class EmulatedSystem:
     _environment_wrapper = None
 
     def __init__(self, libpath):
-        self.memory_map = collections.OrderedDict()
         self._game_loaded = False
         # todo: move libpath to a temp file and load that, for multithread
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
+        self._reset_vars()
         self.set_null_callbacks()
         self.llw.init()
-        self._reset_vars()
+        self.av_info = retro_system_av_info()
+        # simple default WRAM-only address space if the env isn't called
+        self.memory_map = collections.OrderedDict()
 
     # is it okay to assign an audio_sample_batch and replace it with an
     # audio_sample afterward?
@@ -174,7 +176,7 @@ class EmulatedSystem:
         self._loaded_cheats = {}
         self._game_loaded = False
         self.env_props = {}
-        self.av_info = retro_system_av_info()
+        self.env_vars = {}
 
     def __del__(self):
         self.llw.deinit()
@@ -188,7 +190,10 @@ class EmulatedSystem:
             self.llw.cheat_set(index, enabled, code)
 
     def _find_memory_bank(self, offset, length, bank_switch):
-        assert self.memory_map
+        if not self.memory_map:
+            mem_size = self.llw.get_memory_size(MEMORY_WRAM)
+            mem_data = self.llw.get_memory_data(MEMORY_WRAM)
+            self.memory_map[(0, mem_size)] = mem_data
         for (begin, end), pointer in self.memory_map.items():
             if begin <= offset < end:
                 if offset + length > end:
@@ -383,9 +388,13 @@ class EmulatedSystem:
         self.llw.get_system_info(ctypes.byref(sysinfo))
 
         if path:
+            if isinstance(path, str):
+                path = path.encode('utf-8')
+
             gameinfo.path = ctypes.cast(path, ctypes.c_char_p)
             if get_data_from_path and not data:
                 data = open(path, 'rb').read()
+
         elif sysinfo.need_fullpath:
             raise Exception('The loaded libretro needs a full path to the ROM')
 
@@ -397,7 +406,7 @@ class EmulatedSystem:
 
         self.llw.load_game(ctypes.byref(gameinfo))
         self.llw.get_system_av_info(ctypes.byref(self.av_info))
-        self.gameinfo = GameInfoReader().get_info(data, self.name) # get useful info about the game from the rom's header
+        self.gameinfo = GameInfoReader().get_info(data, self.name)  # get useful info about the game from the rom's header
         self._game_loaded = True
 
         if sram:
@@ -522,7 +531,6 @@ class EmulatedSystem:
 
     def basic_environment(self, cmd, data):
         global debug
-        if debug: print(('environment {}'.format(cmd)))
 
         if cmd == ENVIRONMENT_GET_CAN_DUPE:
             b_data = ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))
@@ -554,7 +562,33 @@ class EmulatedSystem:
                 desc_list.append(((desc.start, desc.start + length), desc.ptr))
             desc_list.sort()
             self.memory_map = collections.OrderedDict(desc_list)
+            if debug: print(self.memory_map)
             return True
+        elif cmd == ENVIRONMENT_GET_VARIABLE:
+            variable = ctypes.cast(data, ctypes.POINTER(retro_variable))[0]
+            variable.value = self.env_vars.get(variable.key)
+            return True
+        elif cmd == ENVIRONMENT_SET_VARIABLES:
+            variables = ctypes.cast(data, ctypes.POINTER(retro_variable))
+            idx = 0
+            current = variables[idx]
+
+            assert(isinstance(current, retro_variable))
+
+            while current.key is not None:
+                self.env_vars[current.key] = current.value
+                idx += 1
+                current = variables[idx]
+            return True
+        elif cmd == ENVIRONMENT_GET_VARIABLE_UPDATE:
+            b_data = ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))
+            b_data[0] = False  # assumption: we will never change variables after launched
+            return True
+        elif cmd == ENVIRONMENT_SET_SYSTEM_AV_INFO:
+            b_data = ctypes.cast(data, ctypes.POINTER(retro_system_av_info))
+            return True
+
+        if debug: print(('environment not implemented {}'.format(cmd)))
         return False
 
     def set_null_callbacks(self):
