@@ -3,12 +3,24 @@ module_name = "get_game_info"
 
 class GameInfoReader:
     coreToRomType = {
-        'gambatte': 'gbc'
+        'gambatte': 'gbc',
+        'bsnes': 'snes',
+        'genesis plus gx': 'genesis',
     }
 
     def get_gbc_game_info(self, data):
         return {
-            'name': ctypes.string_at(data[0x134:0x143]).decode('utf-8')
+            'name': ctypes.string_at(data[0x134:0x143]).decode('ascii').rstrip()
+        }
+
+    def get_snes_game_info(self, data):
+        return {
+            'name': ctypes.string_at(data[0x7fC0:0x7fD5]).decode('ascii').rstrip()
+        }
+
+    def get_genesis_game_info(self, data):
+        return {
+            'name': " ".join(ctypes.string_at(data[0x120:0x150]).decode('ascii').split())
         }
 
     def get_info(self, romData, coreName):
@@ -22,4 +34,6 @@ class GameInfoReader:
             print("Couldn't get game info since the rom type '{}' is unknown.".format(romType))
             return {}
 
-        return getInfoForCore(romData)
+        value = getInfoForCore(romData)
+        print(value)
+        return value
