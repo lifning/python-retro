@@ -166,6 +166,7 @@ class EmulatedSystem:
         self.set_null_callbacks()
         self.llw.init()
         self.av_info = retro_system_av_info()
+        self.av_info_changed = True
         # simple default WRAM-only address space if the env isn't called
         self.memory_map = collections.OrderedDict()
 
@@ -406,7 +407,8 @@ class EmulatedSystem:
 
         self.llw.load_game(ctypes.byref(gameinfo))
         self.llw.get_system_av_info(ctypes.byref(self.av_info))
-        self.gameinfo = GameInfoReader().get_info(data, self.name)  # get useful info about the game from the rom's header
+        # get useful info about the game from the rom's header
+        self.gameinfo = GameInfoReader().get_info(data, self.name)
         self._game_loaded = True
 
         if sram:
@@ -426,6 +428,7 @@ class EmulatedSystem:
 
     def get_av_info(self):
         self._require_game_loaded()
+        self.av_info_changed = False
         return {
             'base_size': (
                 int(self.av_info.geometry.base_width), int(self.av_info.geometry.base_height)
@@ -585,7 +588,10 @@ class EmulatedSystem:
             b_data[0] = False  # assumption: we will never change variables after launched
             return True
         elif cmd == ENVIRONMENT_SET_SYSTEM_AV_INFO:
-            b_data = ctypes.cast(data, ctypes.POINTER(retro_system_av_info))
+            ctypes.memmove(ctypes.byref(self.av_info),
+                           ctypes.cast(data, ctypes.POINTER(retro_system_av_info)),
+                           ctypes.sizeof(retro_system_av_info))
+            self.av_info_changed = True
             return True
 
         if debug: print(('environment not implemented {}'.format(cmd)))
