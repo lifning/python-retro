@@ -42,9 +42,13 @@ def set_video_refresh_cb(core, callback):
     core.set_video_refresh_cb(wrapper)
 
 
-def set_video_refresh_surface(core, targetsurf):
-    def wrapper(surf):
-        targetsurf.blit(surf, (0, 0))
+def set_video_refresh_surface(core, targetsurf, scale=False):
+    if not scale:
+        def wrapper(surf):
+            targetsurf.blit(surf, (0, 0))
+    else:
+        def wrapper(surf):
+            pygame.transform.scale(surf, targetsurf.get_size(), targetsurf)
 
     set_video_refresh_cb(core, wrapper)
 
@@ -52,3 +56,4 @@ def set_video_refresh_surface(core, targetsurf):
 def pygame_display_set_mode(core, use_max=True):
     key = 'max_size' if use_max else 'base_size'
     return pygame.display.set_mode(core.get_av_info()[key])
+
