@@ -593,8 +593,14 @@ class EmulatedSystem:
                            ctypes.sizeof(retro_system_av_info))
             self.av_info_changed = True
             return True
+        elif cmd == ENVIRONMENT_SET_GEOMETRY:
+            ctypes.memmove(ctypes.byref(self.av_info.geometry),
+                           ctypes.cast(data, ctypes.POINTER(retro_game_geometry)),
+                           ctypes.sizeof(retro_game_geometry))
+            self.av_info_changed = True
+            return True
 
-        if debug: print(('environment not implemented {}'.format(cmd)))
+        print(f'environment not implemented: {cmd}')
         return False
 
     def set_null_callbacks(self):
