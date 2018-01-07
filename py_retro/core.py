@@ -600,7 +600,7 @@ class EmulatedSystem:
             self.av_info_changed = True
             return True
 
-        print(f'environment not implemented: {cmd}')
+        print(f'retro_environment not implemented: {retro_global_lookup["ENVIRONMENT"].get(cmd, cmd)}')
         return False
 
     def set_null_callbacks(self):
