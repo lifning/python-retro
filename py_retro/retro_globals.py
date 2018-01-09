@@ -139,3 +139,11 @@ MEMDESC_MINSIZE_8 = (3 << 24)
 # backwards compat:
 PORT_1 = 0
 PORT_2 = 1
+
+
+retro_global_lookup = {}
+for name, value in vars().copy().items():
+    if name.isupper():
+        prefix, _, suffix = name.partition('_')
+        retro_global_lookup.setdefault(prefix, dict())
+        retro_global_lookup[prefix][value] = suffix
