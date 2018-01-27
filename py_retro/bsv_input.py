@@ -4,14 +4,14 @@ Read input from a bsnes movie file (*.bsv)
 from struct import Struct, error as StructError
 from binascii import crc32
 
-BSV_MAGIC = 'BSV1'
+BSV_MAGIC = b'BSV1'
 HEADER_STRUCT = Struct('<4s3I')
 RECORD_STRUCT = Struct('<h')
 
 # Due to poorly-worded documentation, some versions of SSNES produce BSV files
 # with the magic number reversed. Such files are otherwise fine, so we'll
 # accept them.
-BSV_SSNES_MAGIC = '1VSB'
+BSV_SSNES_MAGIC = b'1VSB'
 
 
 class CorruptFile(Exception):
@@ -61,7 +61,7 @@ def bsv_decode(filenameOrHandle):
     # Start spooling out the individual button states.
     while True:
         try:
-            yield _extract(RECORD_STRUCT, handle)
+            yield _extract(RECORD_STRUCT, handle)[0]
         except StructError:
             # We've hit the end of the file.
             break
@@ -97,4 +97,5 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
         core.unserialize(saveStateData)
 
     core.set_input_state_cb(wrapper)
+    return wrapper
 
