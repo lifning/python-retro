@@ -61,7 +61,7 @@ def set_audio_sink_batch(core, filenameOrHandle):
     def wrapper(data, frames):
         # We can safely use .writeframesraw() here because the header will be
         # corrected once we call .close()
-        res.writeframesraw(ctypes.string_at(data, frames * 2)[:frames * 2])
+        res.writeframesraw(ctypes.string_at(data, frames * 4)[:frames * 4])
         return frames
 
     core.set_audio_sample_batch_cb(wrapper)
