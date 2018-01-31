@@ -86,7 +86,17 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
                 % (bsv.cart_crc, expectedCartCRC))
 
     if restore:
-        core.unserialize(bsv.state_data)
+        # retry loop for the multi-threaded ParaLLEl-N64,
+        # which refuses to load state while 'initializing'
+        for i in range(100):
+            # noinspection PyBroadException
+            try:
+                core.unserialize(bsv.state_data)
+                break
+            except:
+                if i == 99:
+                    raise
+                core.run()
 
     core.set_input_state_cb(bsv.input_state)
     return bsv
