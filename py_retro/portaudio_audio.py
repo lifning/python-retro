@@ -14,6 +14,9 @@ g_stream = None
 
 g_buffer = b''
 
+g_sizeof_int16 = 2
+g_stereo_channels = 2
+
 # arbitrarily chosen maximum buffer length - in case the playback can't keep up
 g_buffer_max = 16384
 
@@ -23,7 +26,7 @@ g_freq = None
 
 def _consume(in_data, frame_count, time_info, status):
     global g_buffer
-    size = frame_count * 2 * 2
+    size = frame_count * g_sizeof_int16 * g_stereo_channels
     while len(g_buffer) < size:
         time.sleep(0)
     data, g_buffer = g_buffer[:size], g_buffer[size:]
@@ -50,8 +53,8 @@ def pyaudio_init(core):
     if g_pyaudio is None:
         g_freq = int(core.get_av_info()['sample_rate']) or 32040
         g_pyaudio = pyaudio.PyAudio()
-        g_stream = g_pyaudio.open(format=pyaudio.paInt16, channels=2, rate=g_freq, output=True,
-                                  stream_callback=_consume)
+        g_stream = g_pyaudio.open(format=pyaudio.paInt16, channels=g_stereo_channels, rate=g_freq,
+                                  output=True, stream_callback=_consume)
         g_stream.start_stream()
 
 
@@ -75,7 +78,7 @@ def set_audio_sample_batch_cb(core):
     def wrapper(data, frames):
         global g_buffer, g_buffer_max
         if len(g_buffer) < g_buffer_max:
-            g_buffer += ctypes.string_at(data, frames * 2 * 2)
+            g_buffer += ctypes.string_at(data, frames * g_sizeof_int16 * g_stereo_channels)
         else:
             _transpose_frequency()
         return frames

@@ -8,8 +8,12 @@ import ctypes
 
 from .retro_globals import HACK_need_audio_sample_batch
 
+g_stereo_channels = 2
+g_sizeof_int16 = 2
+g_num_samples = 512
+
 # 512 stereo samples of 16-bits each
-g_sound_size = 512 * 2 * 2
+g_sound_size = g_num_samples * g_stereo_channels * g_sizeof_int16
 
 # arbitrarily chosen maximum buffer length - in case the playback can't keep up
 g_buffer_max = 16384
@@ -28,7 +32,8 @@ def pygame_mixer_init(core):
     global g_channel
     if not pygame.mixer.get_init():
         freq = int(core.get_av_info()['sample_rate'] or 32040)
-        pygame.mixer.init(frequency=freq, size=-16, channels=2, buffer=512)
+        pygame.mixer.init(frequency=freq, size=-16, channels=g_stereo_channels,
+                          buffer=g_num_samples)
         g_channel = pygame.mixer.Channel(0)
         g_channel.set_volume(0.5)
 
@@ -86,7 +91,7 @@ def set_audio_sample_batch_cb(core, callback=_enqueue_sound):
         if len(g_buffer) > g_buffer_max:
             g_buffer = b''
 
-        g_buffer += ctypes.string_at(data, frames * 2 * 2)
+        g_buffer += ctypes.string_at(data, frames * g_sizeof_int16 * g_stereo_channels)
 
         if len(g_buffer) >= g_sound_size:
             callback(pygame.mixer.Sound(buffer=g_buffer[:g_sound_size]))
