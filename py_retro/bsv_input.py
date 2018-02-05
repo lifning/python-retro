@@ -22,14 +22,7 @@ class CartMismatch(Exception):
     pass
 
 
-def _extract(struct, handle):
-    """
-    Read an instance of the given structure from the given file handle.
-    """
-    return struct.unpack(handle.read(struct.size))
-
-
-def bsv_decode(filenameOrHandle):
+class BSV:
     """
     Iterate the contents of the given BSV file.
 
@@ -39,36 +32,40 @@ def bsv_decode(filenameOrHandle):
     Once we've reached the end of the input recorded in the BSV file, we just
     yield an infinite stream of zeroes.
     """
-    # Get ourselves a handle to read from.
-    if isinstance(filenameOrHandle, str):
-        handle = open(filenameOrHandle, 'rb')
-    else:
-        handle = filenameOrHandle
 
-    # Read and sanity-check the header.
-    magic, serializerVersion, cartCRC, stateSize = \
-        _extract(HEADER_STRUCT, handle)
+    def __init__(self, filenameOrHandle):
+        if isinstance(filenameOrHandle, str):
+            self.handle = open(filenameOrHandle, 'rb')
+        else:
+            self.handle = filenameOrHandle
 
-    if magic not in (BSV_MAGIC, BSV_SSNES_MAGIC):
-        raise CorruptFile("File %r has bad magic %r, expected %r"
-                % (filenameOrHandle, magic, BSV_MAGIC))
+        # Read and sanity-check the header.
+        magic, serializerVersion, cartCRC, stateSize = self._extract(HEADER_STRUCT)
 
-    # Let our caller know the contents of the header, in case they're
-    # interested.
-    stateData = handle.read(stateSize)
-    yield (serializerVersion, cartCRC, stateData)
+        if magic not in (BSV_MAGIC, BSV_SSNES_MAGIC):
+            raise CorruptFile("File %r has bad magic %r, expected %r"
+                    % (filenameOrHandle, magic, BSV_MAGIC))
 
-    # Start spooling out the individual button states.
-    while True:
-        try:
-            yield _extract(RECORD_STRUCT, handle)[0]
-        except StructError:
-            # We've hit the end of the file.
-            break
+        self.serializer_version = serializerVersion
+        self.cart_crc = cartCRC
+        self.state_data = self.handle.read(stateSize)
 
-    # After the end of the file, just keep yielding zeroes.
-    while True:
-        yield 0
+        self.active = True
+
+    def _extract(self, s):
+        """
+        Read an instance of the given structure from the given file handle.
+        """
+        return s.unpack(self.handle.read(s.size))
+
+    def input_state(self, port, device, index, id_):
+        if self.active:
+            try:
+                return self._extract(RECORD_STRUCT)[0]
+            except StructError:
+                # end of the file
+                self.active = False
+        return 0
 
 
 def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
@@ -82,20 +79,25 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
     filename to use, rather than a function.
     """
 
-    generator = bsv_decode(filename)
+    bsv = BSV(filename)
 
-    def wrapper(port, device, index, id):
-        return next(generator)
-
-    (serializerVersion, cartCRC, saveStateData) = next(generator)
-
-    if expectedCartCRC is not None:
+    if expectedCartCRC is not None and bsv.cart_crc != expectedCartCRC:
         raise CartMismatch("Movie is for cart with CRC32 %r, expected %r"
-                % (cartCRC, expectedCartCRC))
+                % (bsv.cart_crc, expectedCartCRC))
 
     if restore:
-        core.unserialize(saveStateData)
+        # retry loop for the multi-threaded ParaLLEl-N64,
+        # which refuses to load state while 'initializing'
+        for i in range(100):
+            # noinspection PyBroadException
+            try:
+                core.unserialize(bsv.state_data)
+                break
+            except:
+                if i == 99:
+                    raise
+                core.run()
 
-    core.set_input_state_cb(wrapper)
-    return wrapper
+    core.set_input_state_cb(bsv.input_state)
+    return bsv
 
