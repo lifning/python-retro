@@ -2,7 +2,7 @@
 Read input from a bsnes movie file (*.bsv)
 """
 from struct import Struct, error as StructError
-from binascii import crc32
+from py_retro.retro_globals import retro_global_lookup
 
 BSV_MAGIC = b'BSV1'
 HEADER_STRUCT = Struct('<4s3I')
@@ -51,6 +51,7 @@ class BSV:
         self.state_data = self.handle.read(stateSize)
 
         self.active = True
+        self.__debug = dict()
 
     def _extract(self, s):
         """
@@ -61,7 +62,16 @@ class BSV:
     def input_state(self, port, device, index, id_):
         if self.active:
             try:
-                return self._extract(RECORD_STRUCT)[0]
+                val = self._extract(RECORD_STRUCT)[0]
+                old = self.__debug.setdefault((port, device, index, id_), val)
+                if val != old:
+                    self.__debug[(port, device, index, id_)] = val
+                    print(port,
+                          retro_global_lookup['DEVICE'][device],
+                          retro_global_lookup['DEVICE_INDEX'][index],
+                          retro_global_lookup['DEVICE_ID'][id_],
+                          val)
+                return val
             except StructError:
                 # end of the file
                 self.active = False

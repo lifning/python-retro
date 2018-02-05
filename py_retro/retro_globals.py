@@ -147,6 +147,9 @@ retro_global_lookup = {}
 for name, value in vars().copy().items():
     if name.isupper():
         prefix, _, suffix = name.partition('_')
+        if prefix == 'DEVICE' and suffix.startswith('I'):
+            midfix, _, suffix = suffix.partition('_')
+            prefix = '{}_{}'.format(prefix, midfix)
         retro_global_lookup.setdefault(prefix, dict())
         retro_global_lookup[prefix][value] = suffix
         if prefix == 'ENVIRONMENT' and value & ENVIRONMENT_EXPERIMENTAL:
