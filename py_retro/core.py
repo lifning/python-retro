@@ -178,6 +178,8 @@ class EmulatedSystem:
         self._game_loaded = False
         self.env_props = {}
         self.env_vars = {}
+        # HACK: just put this in for software frames 'til we support SET_HW_RENDER
+        self.env_vars[b'parallel-n64-gfxplugin'] = b'angrylion'
 
     def __del__(self):
         self.llw.deinit()
@@ -547,7 +549,7 @@ class EmulatedSystem:
             elif fmt[0] == PIXEL_FORMAT_0RGB1555:
                 self.env_props['pixel_format'] = '0rgb1555'
                 return True
-            elif False and fmt[0] == PIXEL_FORMAT_XRGB8888:
+            elif fmt[0] == PIXEL_FORMAT_XRGB8888:
                 self.env_props['pixel_format'] = 'xrgb8888'
                 return True
             return False
@@ -579,7 +581,10 @@ class EmulatedSystem:
             assert(isinstance(current, retro_variable))
 
             while current.key is not None:
-                self.env_vars[current.key] = current.value
+                description, _, options = current.value.partition(b'; ')
+                options = options.split(b'|')
+                val = self.env_vars.setdefault(current.key, options[0])
+                assert val in options, f'{val} invalid for {current.key}, expected {options}'
                 idx += 1
                 current = variables[idx]
             return True

@@ -123,6 +123,8 @@ ENVIRONMENT_GET_LANGUAGE = 39
 ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER = (40 | ENVIRONMENT_EXPERIMENTAL)
 ENVIRONMENT_GET_HW_RENDER_INTERFACE = (41 | ENVIRONMENT_EXPERIMENTAL)
 ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS = (42 | ENVIRONMENT_EXPERIMENTAL)
+ENVIRONMENT_SET_HW_SHARED_CONTEXT = (44 | ENVIRONMENT_EXPERIMENTAL)
+ENVIRONMENT_GET_VFS_INTERFACE = (45 | ENVIRONMENT_EXPERIMENTAL)
 
 PIXEL_FORMAT_0RGB1555 = 0
 PIXEL_FORMAT_XRGB8888 = 1
@@ -147,3 +149,5 @@ for name, value in vars().copy().items():
         prefix, _, suffix = name.partition('_')
         retro_global_lookup.setdefault(prefix, dict())
         retro_global_lookup[prefix][value] = suffix
+        if prefix == 'ENVIRONMENT' and value & ENVIRONMENT_EXPERIMENTAL:
+            retro_global_lookup[prefix][value & ~ENVIRONMENT_EXPERIMENTAL] = suffix
