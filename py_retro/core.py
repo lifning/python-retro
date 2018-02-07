@@ -1,4 +1,6 @@
 import ctypes
+import os
+import tempfile
 
 import collections
 from .game_info_reader import GameInfoReader
@@ -6,6 +8,20 @@ from .game_info_reader import GameInfoReader
 from .retro_globals import *
 
 debug = False
+
+wrapped_retro_log_print_t = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p)
+_log_wrapper_mod = None
+try:
+    _log_wrapper_mod = ctypes.CDLL(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'c_ext', 'log_wrapper.so')
+    )
+    _log_wrapper_mod.handle_env_get_log_interface_restype = None
+    _log_wrapper_mod.handle_env_get_log_interface_argtypes = [
+        ctypes.POINTER(retro_log_callback),
+        wrapped_retro_log_print_t
+    ]
+except Exception as ex:
+    print(f'Could not load variadic log wrapper module: {repr(ex)}')
 
 
 def null_video_refresh(data, width, height, pitch):
@@ -156,10 +172,12 @@ class EmulatedSystem:
     _input_poll_wrapper = None
     _input_state_wrapper = None
     _environment_wrapper = None
+    _internal_log_wrapper = None
+    _log_wrapper = None
 
     def __init__(self, libpath):
         self._game_loaded = False
-        # todo: move libpath to a temp file and load that, for multithread
+        self._internal_log_wrapper = wrapped_retro_log_print_t(self._internal_log)
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
         self._reset_vars()
@@ -194,8 +212,8 @@ class EmulatedSystem:
 
     def _find_memory_bank(self, offset, length, bank_switch):
         if not self.memory_map:
-            mem_size = self.llw.get_memory_size(MEMORY_WRAM)
-            mem_data = self.llw.get_memory_data(MEMORY_WRAM)
+            mem_size = self.llw.get_memory_size(MEMORY_SYSTEM_RAM)
+            mem_data = self.llw.get_memory_data(MEMORY_SYSTEM_RAM)
             self.memory_map[(0, mem_size)] = mem_data
         for (begin, end), pointer in self.memory_map.items():
             if begin <= offset < end:
@@ -452,6 +470,7 @@ class EmulatedSystem:
         self._input_poll_wrapper = None
         self._input_state_wrapper = None
         self._environment_wrapper = None
+        self._log_wrapper = None
 
     def set_video_refresh_cb(self, callback):
         """ Sets the callback that will handle updated video frames.
@@ -472,7 +491,7 @@ class EmulatedSystem:
             "right" is an int16 that specifies the right audio channel volume.
         The callback should return nothing.
         """
-        if self.name in HACK_need_audio_sample_batch:
+        if HACK_need_audio_sample_batch(self.name):
             def sample_in_terms_of_batch(data, frames):
                 for i in range(frames):
                     callback(data[i * 2], data[i * 2 + 1])
@@ -490,7 +509,7 @@ class EmulatedSystem:
             "frames" is a size_t that specifies the number of {l,r} samples.
         The callback should return nothing.
         """
-        if self.name in HACK_need_audio_sample:
+        if HACK_need_audio_sample(self.name):
             # noinspection PyUnresolvedReferences
             def batch_in_terms_of_sample(left, right):
                 f = batch_in_terms_of_sample
@@ -534,6 +553,18 @@ class EmulatedSystem:
         self._environment_wrapper = retro_environment_t(callback)
         self.llw.set_environment(self._environment_wrapper)
 
+    def set_log_cb(self, callback):
+        self._log_wrapper = callback
+        # called by _internal_log(), which is given to ENVIRONMENT_GET_LOG_INTERFACE.
+
+    def _internal_log(self, level, msg):
+        if self._log_wrapper is not None:
+            self._log_wrapper(level, msg)
+
+    def basic_log(self, level, msg):
+        level_name = "".join(retro_global_lookup["LOG"].get(level))
+        print(f'[{level_name}] {ctypes.string_at(msg).decode("utf-8").rstrip()}')
+
     def basic_environment(self, cmd, data):
         global debug
 
@@ -567,7 +598,8 @@ class EmulatedSystem:
                 desc_list.append(((desc.start, desc.start + length), desc.ptr))
             desc_list.sort()
             self.memory_map = collections.OrderedDict(desc_list)
-            if debug: print(self.memory_map)
+            if debug:
+                print(self.memory_map)
             return True
         elif cmd == ENVIRONMENT_GET_VARIABLE:
             variable = ctypes.cast(data, ctypes.POINTER(retro_variable))[0]
@@ -604,14 +636,25 @@ class EmulatedSystem:
                            ctypes.sizeof(retro_game_geometry))
             self.av_info_changed = True
             return True
+        elif cmd == ENVIRONMENT_GET_SYSTEM_DIRECTORY or cmd == ENVIRONMENT_GET_SAVE_DIRECTORY:
+            # just return /tmp pending a means and/or need to configure this
+            p_path = ctypes.cast(data, ctypes.POINTER(ctypes.c_char_p))
+            p_path[0] = ctypes.cast(tempfile.gettempdirb(), ctypes.c_char_p)
+            return True
+        elif cmd == ENVIRONMENT_GET_LOG_INTERFACE and _log_wrapper_mod is not None:
+            _log_wrapper_mod.handle_env_get_log_interface(
+                ctypes.cast(data, ctypes.POINTER(retro_log_callback)),
+                self._internal_log_wrapper)
+            return True
 
         print(f'retro_environment not implemented: {retro_global_lookup["ENVIRONMENT"].get(cmd, cmd)}')
         return False
 
     def set_null_callbacks(self):
         self.set_environment_cb(self.basic_environment)
+        self.set_log_cb(self.basic_log)
         self.set_video_refresh_cb(null_video_refresh)
-        if self.name in HACK_need_audio_sample:
+        if HACK_need_audio_sample(self.name):
             self.set_audio_sample_cb(null_audio_sample)
         else:
             self.set_audio_sample_batch_cb(null_audio_sample_batch)

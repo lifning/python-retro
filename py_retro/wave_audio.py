@@ -6,64 +6,45 @@ import wave
 import ctypes
 import struct
 
+from .retro_globals import HACK_need_audio_sample
 
-def open_wave(core, filenameOrHandle):
-    res = wave.open(filenameOrHandle, "wb")
+
+def set_audio_sink(core, wav_file):
+    """
+    Records audio to the given .wav file.
+
+    "core" should be an instance of core.EmulatedSystem.
+
+    "wav_file" should be either a string representing the filename
+    where audio data should be written, or a file-handle opened in "wb" mode.
+
+    Audio data will be written to the given file as a 16-bit stereo
+    .wav file, using the 'wave' module from the Python standard library.
+
+    Returns the wave.Wave_write instance used to write the audio.
+
+    .writeframesraw() is used to append to the file.
+    You *must* call .close() on the resulting instance.
+    """
+    res = wave.open(wav_file, 'wb')
     res.setnchannels(2)
     res.setsampwidth(2)
     res.setframerate(core.get_av_info()['sample_rate'] or 32040)
     res.setcomptype('NONE', 'not compressed')
-    return res
 
+    if HACK_need_audio_sample(core.name):
+        sample = struct.Struct('<hh')
+        print('set sample')
+        def wrapper(left, right):
+            res.writeframesraw(sample.pack(left, right))
 
-def set_audio_sink(core, filenameOrHandle):
-    """
-    Records audio to the given .wav file.
+        core.set_audio_sample_cb(wrapper)
+    else:
+        def wrapper(data, frames):
+            size = frames * res.getnchannels() * res.getsampwidth()
+            res.writeframesraw(ctypes.string_at(data, size)[:size])
+            return frames
+        print ('batched')
+        core.set_audio_sample_batch_cb(wrapper)
 
-    "core" should be an instance of core.EmulatedSystem.
-
-    "filenameOrHandle" should be either a string representing the filename
-    where audio data should be written, or a file-handle opened in "wb" mode.
-
-    Audio data will be written to the given file as a 16-bit stereo
-    .wav file, using the 'wave' module from the Python standard library.
-
-    Returns the wave.Wave_write instance used to write the audio.
-    """
-    res = open_wave(core, filenameOrHandle)
-    sndstruct = struct.Struct('<hh')
-
-    def wrapper(left, right):
-        # We can safely use .writeframesraw() here because the header will be
-        # corrected once we call .close()
-        res.writeframesraw(sndstruct.pack(left, right))
-
-    core.set_audio_sample_cb(wrapper)
-    return res
-
-
-def set_audio_sink_batch(core, filenameOrHandle):
-    """
-    Records audio to the given .wav file.
-
-    "core" should be an instance of core.EmulatedSystem.
-
-    "filenameOrHandle" should be either a string representing the filename
-    where audio data should be written, or a file-handle opened in "wb" mode.
-
-    Audio data will be written to the given file as a 16-bit stereo
-    .wav file, using the 'wave' module from the Python standard library.
-
-    Returns the wave.Wave_write instance used to write the audio.
-    """
-    res = open_wave(core, filenameOrHandle)
-
-    def wrapper(data, frames):
-        # We can safely use .writeframesraw() here because the header will be
-        # corrected once we call .close()
-        size = frames * res.getnchannels() * res.getsampwidth()
-        res.writeframesraw(ctypes.string_at(data, size)[:size])
-        return frames
-
-    core.set_audio_sample_batch_cb(wrapper)
     return res
