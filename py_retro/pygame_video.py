@@ -55,4 +55,3 @@ def set_video_refresh_surface(core, targetsurf, scale=False):
 def pygame_display_set_mode(core, use_max=True):
     key = 'max_size' if use_max else 'base_size'
     return pygame.display.set_mode(core.get_av_info()[key])
-
