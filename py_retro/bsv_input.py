@@ -1,12 +1,12 @@
 """
 Read input from a bsnes movie file (*.bsv)
 """
-from struct import Struct, error as StructError
+import struct
 from py_retro.retro_globals import retro_global_lookup
 
 BSV_MAGIC = b'BSV1'
-HEADER_STRUCT = Struct('<4s3I')
-RECORD_STRUCT = Struct('<h')
+HEADER_STRUCT = struct.Struct('<4s3I')
+RECORD_STRUCT = struct.Struct('<h')
 
 # Due to poorly-worded documentation, some versions of SSNES produce BSV files
 # with the magic number reversed. Such files are otherwise fine, so we'll
@@ -33,22 +33,21 @@ class BSV:
     yield an infinite stream of zeroes.
     """
 
-    def __init__(self, filenameOrHandle):
-        if isinstance(filenameOrHandle, str):
-            self.handle = open(filenameOrHandle, 'rb')
+    def __init__(self, bsv_file):
+        if isinstance(bsv_file, str):
+            self.handle = open(bsv_file, 'rb')
         else:
-            self.handle = filenameOrHandle
+            self.handle = bsv_file
 
         # Read and sanity-check the header.
-        magic, serializerVersion, cartCRC, stateSize = self._extract(HEADER_STRUCT)
+        magic, serializer_version, cart_crc, state_size = self._extract(HEADER_STRUCT)
 
         if magic not in (BSV_MAGIC, BSV_SSNES_MAGIC):
-            raise CorruptFile("File %r has bad magic %r, expected %r"
-                    % (filenameOrHandle, magic, BSV_MAGIC))
+            raise CorruptFile(f'File {bsv_file} has bad magic {magic}, expected {BSV_MAGIC}')
 
-        self.serializer_version = serializerVersion
-        self.cart_crc = cartCRC
-        self.state_data = self.handle.read(stateSize)
+        self.serializer_version = serializer_version
+        self.cart_crc = cart_crc
+        self.state_data = self.handle.read(state_size)
 
         self.active = True
         self.__debug = dict()
@@ -66,19 +65,19 @@ class BSV:
                 old = self.__debug.setdefault((port, device, index, id_), val)
                 if val != old:
                     self.__debug[(port, device, index, id_)] = val
-                    print(port,
-                          retro_global_lookup['DEVICE'][device],
-                          retro_global_lookup['DEVICE_INDEX'][index],
-                          retro_global_lookup['DEVICE_ID'][id_],
-                          val)
+                    dev_name = retro_global_lookup['DEVICE'][device][0]
+                    index_name = retro_global_lookup['DEVICE_INDEX'][index][0]
+                    id_name = [x for x in retro_global_lookup['DEVICE_ID'][id_]
+                               if x.startswith(dev_name)]
+                    print(port, dev_name, index_name, id_name, val)
                 return val
-            except StructError:
+            except struct.error:
                 # end of the file
                 self.active = False
         return 0
 
 
-def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
+def set_input_state_file(core, bsv_file, restore=True, expected_cart_crc=None):
     """
     Sets the BSV file containing the log of input states.
 
@@ -89,11 +88,10 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
     filename to use, rather than a function.
     """
 
-    bsv = BSV(filename)
+    bsv = BSV(bsv_file)
 
-    if expectedCartCRC is not None and bsv.cart_crc != expectedCartCRC:
-        raise CartMismatch("Movie is for cart with CRC32 %r, expected %r"
-                % (bsv.cart_crc, expectedCartCRC))
+    if expected_cart_crc is not None and bsv.cart_crc != expected_cart_crc:
+        raise CartMismatch(f'Movie is for cart with CRC32 {bsv.cart_crc}, expected {expected_cart_crc}')
 
     if restore:
         # retry loop for the multi-threaded ParaLLEl-N64,
@@ -110,4 +108,3 @@ def set_input_state_file(core, filename, restore=True, expectedCartCRC=None):
 
     core.set_input_state_cb(bsv.input_state)
     return bsv
-
