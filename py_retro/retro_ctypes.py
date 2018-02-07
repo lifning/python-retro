@@ -110,3 +110,46 @@ class retro_memory_map(ctypes.Structure):
         ("descriptors", ctypes.POINTER(retro_memory_descriptor)),
         ("num_descriptors", ctypes.c_uint),
     ]
+
+
+class retro_controller_description(ctypes.Structure):
+    _fields_ = [
+        ("desc", ctypes.c_char_p),
+        ("id", ctypes.c_uint),
+    ]
+
+
+class retro_controller_info(ctypes.Structure):
+    _fields_ = [
+        ("types", ctypes.POINTER(retro_controller_description)),
+        ("num_types", ctypes.c_uint),
+    ]
+
+
+class retro_subsystem_memory_info(ctypes.Structure):
+    _fields_ = [
+        ("extension", ctypes.c_char_p),
+        ("type", ctypes.c_uint),
+    ]
+
+
+class retro_subsystem_rom_info(ctypes.Structure):
+    _fields_ = [
+        ("desc", ctypes.c_char_p),
+        ("valid_extensions", ctypes.c_char_p),
+        ("need_fullpath", ctypes.c_bool),
+        ("block_extract", ctypes.c_bool),
+        ("required", ctypes.c_bool),
+        ("memory", ctypes.POINTER(retro_subsystem_memory_info)),
+        ("num_memory", ctypes.c_uint),
+    ]
+
+
+class retro_subsystem_info(ctypes.Structure):
+    _fields_ = [
+        ("desc", ctypes.c_char_p),
+        ("ident", ctypes.c_char_p),
+        ("roms", ctypes.POINTER(retro_subsystem_rom_info)),
+        ("num_roms", ctypes.c_uint),
+        ("id", ctypes.c_uint),
+    ]
