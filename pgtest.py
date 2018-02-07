@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python3.6
 import pygame
 import py_retro
 import sys

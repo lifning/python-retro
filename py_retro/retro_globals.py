@@ -1,13 +1,25 @@
 from .retro_ctypes import *
 
-# workarounds
 
-HACK_need_audio_sample_batch = ['FCEUmm', 'Gambatte', 'Genesis Plus GX', 'SNES9x', 'VBA Next']
-HACK_need_audio_sample = ['bNES', 'bSNES', 'Meteor GBA']
+# workarounds
+def HACK_need_audio_sample_batch(name):
+    for x in ['FCEUmm', 'Gambatte', 'Genesis Plus GX', 'SNES9x', 'VBA Next']:
+        if name.startswith(x):
+            return True
+    return False
+
+
+def HACK_need_audio_sample(name):
+    for x in ['bNES', 'bSNES', 'Meteor GBA', 'higan', 'nSide']:
+        if name.startswith(x):
+            return True
+    return False
+
 
 # constants
-
-DEVICE_MASK = 0xff
+DEVICE_TYPE_SHIFT = 8
+DEVICE_MASK = ((1 << DEVICE_TYPE_SHIFT) - 1)
+DEVICE_SUBCLASS = lambda base, id: (((id + 1) << DEVICE_TYPE_SHIFT) | base)
 
 DEVICE_NONE = 0
 DEVICE_JOYPAD = 1
@@ -15,6 +27,7 @@ DEVICE_MOUSE = 2
 DEVICE_KEYBOARD = 3
 DEVICE_LIGHTGUN = 4
 DEVICE_ANALOG = 5
+DEVICE_POINTER = 6
 
 DEVICE_JOYPAD_MULTITAP = ((1 << 8) | DEVICE_JOYPAD)
 DEVICE_LIGHTGUN_SUPER_SCOPE = ((1 << 8) | DEVICE_LIGHTGUN)
@@ -40,6 +53,7 @@ DEVICE_ID_JOYPAD_R3 = 15
 
 DEVICE_INDEX_ANALOG_LEFT = 0
 DEVICE_INDEX_ANALOG_RIGHT = 1
+DEVICE_INDEX_ANALOG_BUTTON = 2
 DEVICE_ID_ANALOG_X = 0
 DEVICE_ID_ANALOG_Y = 1
 
@@ -79,6 +93,7 @@ GAME_TYPE_SUFAMI_TURBO = 0x103
 GAME_TYPE_SUPER_GAME_BOY = 0x104
 
 ENVIRONMENT_EXPERIMENTAL = 0x10000
+ENVIRONMENT_PRIVATE = 0x20000
 
 ENVIRONMENT_SET_ROTATION = 1
 ENVIRONMENT_GET_OVERSCAN = 2
@@ -151,6 +166,4 @@ for name, value in vars().copy().items():
             midfix, _, suffix = suffix.partition('_')
             prefix = '{}_{}'.format(prefix, midfix)
         retro_global_lookup.setdefault(prefix, dict())
-        retro_global_lookup[prefix][value] = suffix
-        if prefix == 'ENVIRONMENT' and value & ENVIRONMENT_EXPERIMENTAL:
-            retro_global_lookup[prefix][value & ~ENVIRONMENT_EXPERIMENTAL] = suffix
+        retro_global_lookup[prefix].setdefault(value, []).append(suffix)

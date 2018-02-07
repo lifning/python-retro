@@ -103,7 +103,7 @@ def set_audio_sample_batch_cb(core, callback=_enqueue_sound):
 
 
 def set_audio_sample_internal(core):
-    if core.name in HACK_need_audio_sample_batch:
+    if HACK_need_audio_sample_batch(core.name):
         set_audio_sample_batch_cb(core)
     else:
         set_audio_sample_cb(core)
