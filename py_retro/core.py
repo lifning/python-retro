@@ -8,9 +8,12 @@ wrapped_retro_log_print_t = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p
 _log_wrapper_mod = None
 # noinspection PyBroadException
 try:
+    _log_wrapper_mod = __import__('cext')
+except ImportError:
+    print('Could not load Python C extension module, falling back to CDLL')
     _log_wrapper_mod = ctypes.CDLL(
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     'c_ext', 'log_wrapper.so')
+                     'c_ext_src', 'log_wrapper.so')
     )
     _log_wrapper_mod.handle_env_get_log_interface_restype = None
     _log_wrapper_mod.handle_env_get_log_interface_argtypes = [
