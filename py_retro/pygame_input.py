@@ -66,7 +66,7 @@ def input_poll_cb():
                 elif joy_mappings[player][m].map_type == MAP_HAT:
                     if 0 <= idx < sdl_joy[player].get_numhats():
                         hat = sdl_joy[player].get_hat(idx)
-                        padcache[player][m] = int(hat == joy_mappings[player][m].extra)
+                        padcache[player][m] = int(hat in joy_mappings[player][m].extra)
 
 
 def input_state_cb(port, device, index, id):
@@ -112,7 +112,8 @@ def set_input_poll_joystick(core, mapping=None, joyindex=0, player=0):
         joy_mappings[player][k].extra = 0
         if len(v) > 2:
             if v[0] == 'h':
-                joy_mappings[player][k].extra = hatdirs[v[2]]
+                joy_mappings[player][k].extra = set(val for key, val in hatdirs.items()
+                                                    if v[2] in key)
             else:
                 joy_mappings[player][k].extra = v[2]
 
@@ -120,10 +121,8 @@ def set_input_poll_joystick(core, mapping=None, joyindex=0, player=0):
     sdl_joy[player] = pygame.joystick.Joystick(joyindex)
     sdl_joy[player].init()
 
-    # if this is the first call
-    if not num_players:
-        core.set_input_poll_cb(input_poll_cb)
-        core.set_input_state_cb(input_state_cb)
+    core.set_input_poll_cb(input_poll_cb)
+    core.set_input_state_cb(input_state_cb)
 
     if num_players <= player:
         num_players = player + 1
