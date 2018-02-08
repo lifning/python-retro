@@ -5,7 +5,13 @@ import sys
 
 lib_path, rom_path, til_path = sys.argv[1:4]
 
+if til_path.endswith('.gz'):
+    open = __import__('gzip').open
+
 emu = py_retro.core.EmulatedSystem(lib_path)
+
+# py_retro.portaudio_audio.set_audio_sample_internal(emu)
+py_retro.pygame_input.set_input_poll_joystick(emu)
 
 
 def update_screen():
@@ -35,12 +41,7 @@ def run_loop(til_playback=None):
 def record():
     emu.load_game_normal(path=rom_path)
 
-    clock = pygame.time.Clock()
-    fps = update_screen()
-
-    # py_retro.portaudio_audio.set_audio_sample_internal(emu)
-    py_retro.pygame_input.set_input_poll_joystick(emu)
-
+    # don't record until 'exit' is clicked
     run_loop()
 
     with open(til_path, 'wb') as f:
