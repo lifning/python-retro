@@ -6,6 +6,7 @@ from . import game_info_reader
 from . import wave_audio
 from . import simple_input
 from . import bsv_input
+from . import til_input
 
 # things with external dependencies that some consumers may not have or need
 try:
