@@ -151,16 +151,20 @@ class TilPlayer:
 
     def input_poll(self):
         packet_type = None
-        while packet_type != PACKET_TYPE_INPUT and not self.finished:
+        while not self.finished and packet_type != PACKET_TYPE_INPUT:
             header = self.handle.read(PACKET_HEADER.size)
             if len(header) < PACKET_HEADER.size:
                 self.finished = True
                 self._inputs.clear()
-                break
             else:
                 packet_type, size = PACKET_HEADER.unpack(header)
                 data = self.handle.read(size)
-                if packet_type == PACKET_TYPE_INPUT:
+                if len(data) < size:
+                    print(f'{self.__class__.__name__}: incomplete packet, maybe corrupt file?'
+                          f'packet type {packet_type}, expected {size} bytes, got {len(data)}.',
+                          file=sys.stderr)
+                    self.finished = True
+                elif packet_type == PACKET_TYPE_INPUT:
                     self._inputs.update(INPUT_POLL_SET.iter_unpack(data))
                 elif packet_type == PACKET_TYPE_SAVESTATE:
                     self._validate_savestate(data)
