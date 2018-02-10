@@ -238,11 +238,11 @@ SIMD_CMOV = (1 << 20)
 SIMD_ASIMD = (1 << 21)
 
 retro_global_lookup = {}
-for name, value in vars().copy().items():
-    if name.isupper():
-        prefix, _, suffix = name.partition('_')
-        if prefix == 'DEVICE' and suffix.startswith('I'):
-            midfix, _, suffix = suffix.partition('_')
-            prefix = '{}_{}'.format(prefix, midfix)
-        retro_global_lookup.setdefault(prefix, dict())
-        retro_global_lookup[prefix].setdefault(value, []).append(suffix)
+for _name, _value in vars().copy().items():
+    if _name.isupper():
+        _prefix, _, _suffix = _name.partition('_')
+        if _prefix == 'DEVICE' and _suffix.startswith('I'):
+            _midfix, _, _suffix = _suffix.partition('_')
+            _prefix = '{}_{}'.format(_prefix, _midfix)
+        retro_global_lookup.setdefault(_prefix, dict())
+        retro_global_lookup[_prefix].setdefault(_value, []).append(_suffix)
