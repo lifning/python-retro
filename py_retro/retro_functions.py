@@ -1,7 +1,8 @@
 import ctypes
 
-from py_retro import retro_environment_t, retro_video_refresh_t, retro_audio_sample_t, retro_audio_sample_batch_t, \
-    retro_input_poll_t, retro_input_state_t, retro_system_info, retro_system_av_info, retro_game_info
+from .retro_ctypes import retro_environment_t, retro_video_refresh_t, retro_audio_sample_t, \
+    retro_audio_sample_batch_t, retro_input_poll_t, retro_input_state_t, retro_system_info, retro_system_av_info, \
+    retro_game_info
 
 
 class LowLevelWrapper(ctypes.CDLL):

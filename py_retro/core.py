@@ -1,5 +1,4 @@
 import os
-import tempfile
 
 import collections
 
@@ -45,11 +44,7 @@ class EmulatedSystem:
 
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
-        self.llw.init()
-        self.av_info = retro_system_av_info()
-        self.av_info_changed = True
 
-        self.env_props = {}
         # HACK: just put this in for software frames 'til we support SET_HW_RENDER
         self.env_vars = {b'parallel-n64-gfxplugin': b'angrylion'}
 
@@ -69,6 +64,9 @@ class EmulatedSystem:
         self.llw.set_input_poll(self._input_poll_wrapper)
         self.llw.set_input_state(self._input_state_wrapper)
         self.llw.set_environment(self._environment_wrapper)
+
+        self.llw.init()
+        self.av_info = retro_system_av_info()
 
     def __del__(self):
         self.llw.deinit()
@@ -224,7 +222,7 @@ class EmulatedSystem:
                 print('environment: could not set logging interface because C wrapper not loaded.')
                 return False
 
-        print('retro_environment not implemented: {_rgl("ENVIRONMENT", cmd)}')
+        print(f'retro_environment not implemented: {_rgl("ENVIRONMENT", cmd)}')
         return False
 
     def _video_refresh(self, data, width, height, pitch):
