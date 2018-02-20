@@ -10,9 +10,7 @@ from . import til_input
 
 # things with external dependencies that some consumers may not have or need
 try:
-    from . import pygame_video
-    from . import pygame_audio
-    from . import pygame_input
+    from . import pygame_emu
 except ImportError:
     print('py_retro: pygame not available.', file=__import__('sys').stderr)
 
