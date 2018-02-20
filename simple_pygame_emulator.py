@@ -2,13 +2,13 @@
 import pygame
 import sys
 
-from py_retro.pygame_emu import PyGameSystem
+from py_retro.pygame_emu import PygameSystem
 
 libpath, rompath = sys.argv[1:3]
 
 
 def main():
-    emu = PyGameSystem(libpath)
+    emu = PygameSystem(libpath)
     emu.load_game(path=rompath)
 
     # run each frame until closed.

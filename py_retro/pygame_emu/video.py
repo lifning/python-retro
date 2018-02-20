@@ -5,7 +5,7 @@ from ..retro_globals import PIXEL_FORMAT_0RGB1555, PIXEL_FORMAT_XRGB8888, PIXEL_
 from ..core import EmulatedSystem, _rgl
 
 
-class PyGameVideoMixin(EmulatedSystem):
+class PygameVideoMixin(EmulatedSystem):
     def __init__(self, libpath, **kw):
         self._set_pixel_format(PIXEL_FORMAT_0RGB1555)
         super().__init__(libpath, **kw)
@@ -60,6 +60,11 @@ class PyGameVideoMixin(EmulatedSystem):
     def run(self):
         super().run()
         if self.__window and self.screen:
-            #self.__window.blit(self.screen, (0, 0))
-            pygame.transform.scale(self.screen, self.__window.get_size(), self.__window)
+            if self.screen.get_size() != self.__window.get_size():
+                if self.screen.get_masks() == self.__window.get_masks():
+                    pygame.transform.scale(self.screen, self.__window.get_size(), self.__window)
+                else:
+                    self.__window.blit(pygame.transform.scale(self.screen, self.__window.get_size()))
+            else:
+                self.__window.blit(self.screen, (0, 0))
             pygame.display.flip()
