@@ -34,7 +34,7 @@ g_button_map = {
 }
 
 
-class PyGameJoystickMixin(EmulatedSystem):
+class PygameJoystickMixin(EmulatedSystem):
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         pygame.joystick.init()
