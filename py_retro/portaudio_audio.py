@@ -1,11 +1,6 @@
-"""
-PortAudio output for SNES Audio.
-"""
-
 import pyaudio
 import ctypes
 import struct
-import time
 
 from .core import EmulatedSystem
 
