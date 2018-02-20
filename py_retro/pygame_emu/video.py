@@ -64,7 +64,7 @@ class PygameVideoMixin(EmulatedSystem):
                 if self.screen.get_masks() == self.__window.get_masks():
                     pygame.transform.scale(self.screen, self.__window.get_size(), self.__window)
                 else:
-                    self.__window.blit(pygame.transform.scale(self.screen, self.__window.get_size()))
+                    self.__window.blit(pygame.transform.scale(self.screen, self.__window.get_size()), (0, 0))
             else:
                 self.__window.blit(self.screen, (0, 0))
             pygame.display.flip()
