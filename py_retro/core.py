@@ -39,7 +39,7 @@ class LoadGameError(Exception):
 
 
 class EmulatedSystem:
-    def __init__(self, libpath, trace=False):
+    def __init__(self, libpath, trace=False, **_):
         self.trace = trace
 
         self.llw = LowLevelWrapper(libpath)
@@ -59,6 +59,7 @@ class EmulatedSystem:
 
         self.llw.set_video_refresh(self._video_refresh_wrapper)
         self.llw.set_audio_sample_batch(self._audio_sample_batch_wrapper)
+        # todo: see if we can unconditionally set both without negative consequence
         if HACK_need_audio_sample(self.name):
             self.llw.set_audio_sample(self._audio_sample_wrapper)
         self.llw.set_input_poll(self._input_poll_wrapper)
@@ -280,9 +281,9 @@ class EmulatedSystem:
         pass
 
 
-class MemoryOpsSystem(EmulatedSystem):
-    def __init__(self, libpath):
-        super().__init__(libpath)
+class MemoryOpsMixin(EmulatedSystem):
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
         self._loaded_cheats = {}
         # simple default WRAM-only address space if the env isn't called
         self.memory_map = collections.OrderedDict()
@@ -353,7 +354,7 @@ class MemoryOpsSystem(EmulatedSystem):
         for index, (code, enabled) in list(self._loaded_cheats.items()):
             self.llw.cheat_set(index, enabled, code)
 
-    def _find_memory_bank(self, offset, length, bank_switch):
+    def __find_memory_bank(self, offset, length, bank_switch):
         if not self.memory_map:
             mem_size = self.llw.get_memory_size(MEMORY_SYSTEM_RAM)
             mem_data = self.llw.get_memory_data(MEMORY_SYSTEM_RAM)
@@ -370,13 +371,13 @@ class MemoryOpsSystem(EmulatedSystem):
                          'address range not found in any memory map region')
 
     def peek_memory_region(self, offset, length, bank_switch=0):
-        pointer = self._find_memory_bank(offset, length, bank_switch)
+        pointer = self.__find_memory_bank(offset, length, bank_switch)
         buffer = ctypes.create_string_buffer(length)
         ctypes.memmove(buffer, pointer, length)
         return buffer.raw
 
     def poke_memory_region(self, offset, data, bank_switch=0):
-        pointer = self._find_memory_bank(offset, len(data), bank_switch)
+        pointer = self.__find_memory_bank(offset, len(data), bank_switch)
         ctypes.memmove(pointer, data, len(data))
 
     def memory_to_string(self, mem_type):
