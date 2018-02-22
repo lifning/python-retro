@@ -23,13 +23,12 @@ class PortaudioMixin(EmulatedSystem):
         return True
 
     def __set_sample_rate(self, sample_rate):
-        self._sample_rate = sample_rate
         if self.__stream:
             self.__stream.close()
         self.__stream = self.__pyaudio.open(
             format=pyaudio.paInt16,
             channels=g_stereo_channels,
-            rate=self._sample_rate,
+            rate=sample_rate,
             output=True,
             stream_callback=self.__consume)
         self.__stream.start_stream()
@@ -50,8 +49,9 @@ class PortaudioMixin(EmulatedSystem):
     def _audio_sample(self, left, right):
         sample = g_stereo_struct.pack(left, right)
         self.__buffer.extend(sample)
+        super()._audio_sample(left, right)
 
     def _audio_sample_batch(self, data, frames):
         samples = ctypes.string_at(data, frames * g_sizeof_int16 * g_stereo_channels)
         self.__buffer.extend(samples)
-        return frames
+        return super()._audio_sample_batch(data, frames)

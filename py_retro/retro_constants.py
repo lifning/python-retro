@@ -237,12 +237,17 @@ SIMD_MOVBE = (1 << 19)
 SIMD_CMOV = (1 << 20)
 SIMD_ASIMD = (1 << 21)
 
-retro_global_lookup = {}
+_retro_constant_lookup = {}
 for _name, _value in vars().copy().items():
     if _name.isupper():
         _prefix, _, _suffix = _name.partition('_')
         if _prefix == 'DEVICE' and _suffix.startswith('I'):
             _midfix, _, _suffix = _suffix.partition('_')
             _prefix = '{}_{}'.format(_prefix, _midfix)
-        retro_global_lookup.setdefault(_prefix, dict())
-        retro_global_lookup[_prefix].setdefault(_value, []).append(_suffix)
+        _retro_constant_lookup.setdefault(_prefix, dict())
+        _retro_constant_lookup[_prefix].setdefault(_value, []).append(_suffix)
+
+
+# _retro_constant_lookup abbreviation for concise logging
+def rcl(prefix, value):
+    return _retro_constant_lookup.get(prefix, {}).get(value, value)

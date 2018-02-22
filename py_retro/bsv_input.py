@@ -2,7 +2,7 @@
 Read input from a bsnes movie file (*.bsv)
 """
 import struct
-from py_retro.retro_globals import retro_global_lookup
+from py_retro.retro_constants import _retro_constant_lookup
 
 BSV_MAGIC = b'BSV1'
 HEADER_STRUCT = struct.Struct('<4s3I')
@@ -65,9 +65,9 @@ class BSV:
                 old = self.__debug.setdefault((port, device, index, id_), val)
                 if val != old:
                     self.__debug[(port, device, index, id_)] = val
-                    dev_name = retro_global_lookup['DEVICE'][device][0]
-                    index_name = retro_global_lookup['DEVICE_INDEX'][index][0]
-                    id_name = [x for x in retro_global_lookup['DEVICE_ID'][id_]
+                    dev_name = _retro_constant_lookup['DEVICE'][device][0]
+                    index_name = _retro_constant_lookup['DEVICE_INDEX'][index][0]
+                    id_name = [x for x in _retro_constant_lookup['DEVICE_ID'][id_]
                                if x.startswith(dev_name)]
                     print(port, dev_name, index_name, id_name, val)
                 return val
