@@ -19,5 +19,5 @@ try:
 except ImportError:
     print('py_retro: portaudio (pyaudio) not available.', file=__import__('sys').stderr)
 
-from .retro_globals import *
+from .retro_constants import *
 

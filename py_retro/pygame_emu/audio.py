@@ -22,10 +22,8 @@ class PygameAudioMixin(EmulatedSystem):
 
     def _set_timing(self, fps, sample_rate):
         super()._set_timing(fps, sample_rate)
-        self._sample_rate = sample_rate
-        if pygame.mixer.get_init() != (int(sample_rate),
-                                       g_signed_16bit_format,
-                                       g_stereo_channels):
+        init_params = (int(sample_rate), g_signed_16bit_format, g_stereo_channels)
+        if pygame.mixer.get_init() != init_params:
             pygame.mixer.quit()
         pygame.mixer.init(frequency=int(sample_rate),
                           size=g_signed_16bit_format,
@@ -38,11 +36,12 @@ class PygameAudioMixin(EmulatedSystem):
     def _audio_sample(self, left, right):
         sample = g_stereo_struct.pack(left, right)
         self.__buffer.extend(sample)
+        super()._audio_sample(left, right)
 
     def _audio_sample_batch(self, data, frames):
         samples = ctypes.string_at(data, frames * g_sizeof_int16 * g_stereo_channels)
         self.__buffer.extend(samples)
-        return frames
+        return super()._audio_sample_batch(data, frames)
 
     def run(self):
         super().run()

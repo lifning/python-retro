@@ -5,12 +5,7 @@ import collections
 from .game_info_reader import GameInfoReader
 
 from .retro_functions import *
-from .retro_globals import *
-
-
-# retro_global_lookup for concise logging
-def _rgl(prefix, value):
-    return retro_global_lookup.get(prefix, {}).get(value, value)
+from .retro_constants import *
 
 
 # try to load C helper library
@@ -59,7 +54,8 @@ class EmulatedSystem:
 
         self.llw.set_video_refresh(self._video_refresh_wrapper)
         self.llw.set_audio_sample_batch(self._audio_sample_batch_wrapper)
-        # todo: see if we can unconditionally set both without negative consequence
+        # todo: see if we can unconditionally set both without negative consequence.
+        # we really don't want non-batch being called if we can help it, because it's very slow
         if HACK_need_audio_sample(self.name):
             self.llw.set_audio_sample(self._audio_sample_wrapper)
         self.llw.set_input_poll(self._input_poll_wrapper)
@@ -223,7 +219,7 @@ class EmulatedSystem:
                 print('environment: could not set logging interface because C wrapper not loaded.')
                 return False
 
-        print(f'retro_environment not implemented: {_rgl("ENVIRONMENT", cmd)}')
+        print(f'retro_environment not implemented: {rcl("ENVIRONMENT", cmd)}')
         return False
 
     def _video_refresh(self, data, width, height, pitch):
@@ -246,13 +242,13 @@ class EmulatedSystem:
     def _input_state(self, port, device, index, id_):
         if self.trace:
             print(f'input_state(port={port}, '
-                  f'device={_rgl("DEVICE", device)}, '
-                  f'index={_rgl("DEVICE_INDEX", index)}, '
-                  f'id={_rgl("DEVICE_ID", id_)})')
+                  f'device={rcl("DEVICE", device)}, '
+                  f'index={rcl("DEVICE_INDEX", index)}, '
+                  f'id={rcl("DEVICE_ID", id_)})')
         return 0
 
     def _log(self, level, msg):
-        level_name = "".join(retro_global_lookup["LOG"].get(level))
+        level_name = ''.join(rcl('LOG', level))
         print(f'[{level_name}] {ctypes.string_at(msg).decode("utf-8").rstrip()}')
 
     def _get_system_directory(self):
@@ -268,17 +264,17 @@ class EmulatedSystem:
     def _set_geometry(self, base_size, max_size, aspect_ratio):
         if self.trace:
             print(f'set_geometry(base_size={base_size}, max_size={max_size}, aspect_ratio={aspect_ratio})')
-        return False
+        return True
 
     def _set_timing(self, fps, sample_rate):
         if self.trace:
             print(f'set_timing(fps={fps}, sample_rate={sample_rate})')
-        return False
+        return True
 
     def _set_pixel_format(self, fmt):
         if self.trace:
-            print(f'set_pixel_format(fmt={_rgl("PIXEL", fmt)})')
-        pass
+            print(f'set_pixel_format(fmt={rcl("PIXEL", fmt)})')
+        return True
 
 
 class MemoryOpsMixin(EmulatedSystem):

@@ -1,9 +1,10 @@
 import pygame
 
-from ..retro_globals import *
+from ..retro_constants import *
 from ..core import EmulatedSystem
 
 # xinput mappings because lazy
+# TODO: can we steal SDL2's GameController database for reasonable defaults?
 g_stick_map = {
     DEVICE_INDEX_ANALOG_LEFT: {
         DEVICE_ID_ANALOG_X: lambda j: 32767 * j.get_axis(0),
@@ -43,6 +44,7 @@ class PygameJoystickMixin(EmulatedSystem):
         self.__joy_states = dict()
 
     def _input_poll(self):
+        # TODO: multi support, per-pad configurable mappings.
         port = 0
         device = DEVICE_JOYPAD
         index = 0
