@@ -2,7 +2,7 @@ import pyaudio
 import ctypes
 import struct
 
-from .core import EmulatedSystem
+from .core import EmulatedSystem, TraceStubMixin
 
 g_stereo_struct = struct.Struct('<hh')
 
@@ -37,11 +37,11 @@ class PortaudioMixin(EmulatedSystem):
         size = frame_count * g_sizeof_int16 * g_stereo_channels
         data, self.__buffer = self.__buffer[:size], self.__buffer[size:]
         if len(data) < size:
-            if self.trace:
+            if isinstance(self, TraceStubMixin):
                 print(f'portaudio underrun: {len(data)} < {size}')
             data.extend([0] * (size - len(data)))
         elif len(self.__buffer) > 2*size:
-            if self.trace:
+            if isinstance(self, TraceStubMixin):
                 print(f'portaudio overrun: {len(self.__buffer)} > {2*size}')
             self.__buffer = self.__buffer[-size:]
         return bytes(data), pyaudio.paContinue
