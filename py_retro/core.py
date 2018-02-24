@@ -34,7 +34,7 @@ class LoadGameError(Exception):
 
 
 class EmulatedSystem:
-    def __init__(self, libpath, **_):
+    def __init__(self, libpath, **kw):
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
 

@@ -11,8 +11,8 @@ from .pygame_emu.video import PygameVideoMixin
 # Believe it or not, Pygame is a more competent image library than PIL,
 # at least when it comes to converting between pixel formats
 class FfmpegVideoMixin(PygameVideoMixin):
-    def __init__(self, libpath, **_):
-        super().__init__(libpath, **_)
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
         pygame.display.init()
         self.__framebuffer = None
         self.__bits_per_pixel = None
@@ -23,17 +23,8 @@ class FfmpegVideoMixin(PygameVideoMixin):
     def open_video_file(self, output_file, extra_params=()):
         w, h = self.__framebuffer.get_size()
         fps = self.__fps
-        cmd = [
-            'ffmpeg', '-y',
-            '-f', 'rawvideo',
-            '-c:v', 'rawvideo',
-            '-s', f'{w}x{h}',
-            '-pix_fmt', 'rgb24',
-            '-r', f'{fps}',
-            '-i', '-',
-            '-an',
-            '-pix_fmt', 'yuv420p'
-        ]
+        cmd = (f'ffmpeg -y -f rawvideo -c:v rawvideo -s {w}x{h} -pix_fmt rgb24'
+               f' -r {fps} -i - -an -pix_fmt yuv420p').split()
         cmd.extend(extra_params)
         cmd.append(output_file)
         self.__pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE)

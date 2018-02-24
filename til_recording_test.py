@@ -3,60 +3,48 @@ import pygame
 import py_retro
 import sys
 
+from py_retro.pygame_emu import PygameSystem
+from py_retro.til_input import TilRecorderInputMixin, TilPlayerInputMixin
+
 lib_path, rom_path, til_path = sys.argv[1:4]
 
 if til_path.endswith('.gz'):
     open = __import__('gzip').open
 
-emu = py_retro.core.EmulatedSystem(lib_path)
 
-# py_retro.portaudio_audio.set_audio_sample_internal(emu)
-py_retro.pygame_input.set_input_poll_joystick(emu)
-
-
-def update_screen():
-    screen = py_retro.pygame_video.pygame_display_set_mode(emu, False)
-    py_retro.pygame_video.set_video_refresh_surface(emu, screen)
-    return emu.get_av_info().get('fps', 60)
+class TilSystem(TilRecorderInputMixin, TilPlayerInputMixin, PygameSystem):
+    pass
 
 
-def run_loop(til_playback=None):
-    clock = pygame.time.Clock()
-    fps = update_screen()
+emu = TilSystem(lib_path)
 
+
+def run_loop(emu):
     running = True
     while running:
-        if emu.av_info_changed:
-            fps = update_screen()
-        if til_playback is not None and til_playback.finished:
-            py_retro.pygame_input.set_input_poll_joystick(emu)
         emu.run()
-        pygame.display.flip()
-        clock.tick(fps)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
 
 def record():
-    emu.load_game_normal(path=rom_path)
+    emu.load_game(path=rom_path)
 
     # don't record until 'exit' is clicked
-    run_loop()
+    run_loop(emu)
 
-    with open(til_path, 'wb') as f:
-        with py_retro.til_input.TilRecorder(emu, f):
-            run_loop()
+    with emu.til_record(open(til_path, 'wb')):
+        run_loop(emu)
 
     emu.unload()
 
 
 def replay():
-    emu.load_game_normal(path=rom_path)
+    emu.load_game(path=rom_path)
 
-    with open(til_path, 'rb') as f:
-        playback = py_retro.til_input.TilPlayer(emu, f)
-        run_loop(playback)
+    with emu.til_playback(open(til_path, 'rb')):
+        run_loop(emu)
 
     emu.unload()
 

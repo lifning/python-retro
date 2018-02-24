@@ -1,3 +1,5 @@
+# TODO: parse libretro.h with libclang or something and make a build step of it
+
 varnames = '''
 set_environment  set_video_refresh
 set_audio_sample set_audio_sample_batch
