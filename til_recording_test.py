@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.6
 import pygame
-import py_retro
 import sys
 
 from py_retro.pygame_emu import PygameSystem
@@ -19,7 +18,7 @@ class TilSystem(TilRecorderInputMixin, TilPlayerInputMixin, PygameSystem):
 emu = TilSystem(lib_path)
 
 
-def run_loop(emu):
+def run_loop():
     running = True
     while running:
         emu.run()
@@ -32,10 +31,10 @@ def record():
     emu.load_game(path=rom_path)
 
     # don't record until 'exit' is clicked
-    run_loop(emu)
+    run_loop()
 
     with emu.til_record(open(til_path, 'wb')):
-        run_loop(emu)
+        run_loop()
 
     emu.unload()
 
@@ -44,7 +43,7 @@ def replay():
     emu.load_game(path=rom_path)
 
     with emu.til_playback(open(til_path, 'rb')):
-        run_loop(emu)
+        run_loop()
 
     emu.unload()
 
