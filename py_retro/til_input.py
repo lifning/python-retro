@@ -115,21 +115,22 @@ class TilPlayerInputMixin(EmulatedSystem):
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__handle = None
-        self.finished = False
         self.__fix_desyncs = False
         self.__inputs = dict()
 
     @contextmanager
     def til_playback(self, source_file, fix_desyncs=False):
         self.__handle = source_file
-        self.finished = False
         self.__fix_desyncs = fix_desyncs
-        self.__inputs = dict()
+        self.__inputs.clear()
 
         self.__peek_first_packet()
 
         yield
 
+        self.__handle = None
+
+    def til_stop(self):
         self.__handle = None
 
     def __peek_first_packet(self):
@@ -161,16 +162,15 @@ class TilPlayerInputMixin(EmulatedSystem):
             print(f'TilPlayer: error in (un)serialization.')
 
     def _input_poll(self):
-        if self.finished or not self.__handle:
+        if not self.__handle:
             super()._input_poll()
             return
 
         packet_type = None
-        while not self.finished and packet_type != PACKET_TYPE_INPUT:
+        while self.__handle and packet_type != PACKET_TYPE_INPUT:
             header = self.__handle.read(PACKET_HEADER.size)
             if len(header) < PACKET_HEADER.size:
-                self.finished = True
-                self.__inputs.clear()
+                self.__handle = None
                 print('TilPlayer: finished playback.')
             else:
                 packet_type, size = PACKET_HEADER.unpack(header)
@@ -179,7 +179,7 @@ class TilPlayerInputMixin(EmulatedSystem):
                     print('TilPlayer: incomplete packet, maybe corrupt file?'
                           f'packet type {packet_type}, expected {size} bytes, got {len(data)}.',
                           file=sys.stderr)
-                    self.finished = True
+                    self.__handle = None
                 elif packet_type == PACKET_TYPE_INPUT:
                     self.__inputs.update(INPUT_POLL_SET.iter_unpack(data))
                 elif packet_type == PACKET_TYPE_SAVESTATE:
@@ -188,7 +188,7 @@ class TilPlayerInputMixin(EmulatedSystem):
                     print(f'TilPlayer: unknown tag: {packet_type}.')
 
     def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
-        if self.finished or not self.__handle:
+        if not self.__handle:
             return super()._input_state(port, device, index, id_)
 
         val = self.__inputs.get(bytes((port, device, index, id_)), 0)
