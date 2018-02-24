@@ -34,9 +34,7 @@ class LoadGameError(Exception):
 
 
 class EmulatedSystem:
-    def __init__(self, libpath, trace=False, **_):
-        self.trace = trace
-
+    def __init__(self, libpath, **_):
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
 
@@ -68,14 +66,14 @@ class EmulatedSystem:
     def __del__(self):
         self.llw.deinit()
 
-    def __set_geometry_wrapper(self):
+    def __set_geometry_wrapper(self) -> bool:
         return self._set_geometry(
             base_size=(int(self.av_info.geometry.base_width), int(self.av_info.geometry.base_height)),
             max_size=(int(self.av_info.geometry.max_width), int(self.av_info.geometry.max_height)),
             aspect_ratio=float(self.av_info.geometry.aspect_ratio)
         )
 
-    def __set_timing_wrapper(self):
+    def __set_timing_wrapper(self) -> bool:
         return self._set_timing(
             fps=float(self.av_info.timing.fps),
             sample_rate=float(self.av_info.timing.sample_rate)
@@ -127,7 +125,7 @@ class EmulatedSystem:
     def unload(self):
         self.llw.unload_game()
 
-    def serialize(self):
+    def serialize(self) -> bytes:
         size = self.llw.serialize_size()
         buf = ctypes.create_string_buffer(size)
         res = self.llw.serialize(ctypes.cast(buf, ctypes.c_void_p), size)
@@ -135,12 +133,12 @@ class EmulatedSystem:
             raise SerializationError('problem in serialize')
         return buf.raw
 
-    def unserialize(self, state):
+    def unserialize(self, state: bytes):
         res = self.llw.unserialize(ctypes.cast(state, ctypes.c_void_p), len(state))
         if not res:
             raise SerializationError('problem in unserialize')
 
-    def set_controller_port_device(self, port, device):
+    def set_controller_port_device(self, port: int, device: int):
         self.llw.set_controller_port_device(port, device)
 
     def reset(self):
@@ -149,7 +147,7 @@ class EmulatedSystem:
     def run(self):
         self.llw.run()
 
-    def _environment(self, cmd, data):
+    def _environment(self, cmd: int, data: ctypes.c_void_p) -> bool:
         if cmd == ENVIRONMENT_GET_CAN_DUPE:
             b_data = ctypes.cast(data, ctypes.POINTER(ctypes.c_bool))
             b_data[0] = True
@@ -222,59 +220,84 @@ class EmulatedSystem:
         print(f'retro_environment not implemented: {rcl("ENVIRONMENT", cmd)}')
         return False
 
-    def _video_refresh(self, data, width, height, pitch):
-        if self.trace:
-            print(f'video_refresh(data={id(data)}, width={width}, height={height}, pitch={pitch})')
-
-    def _audio_sample(self, left, right):
-        if self.trace:
-            print(f'audio_sample(left={left}, right={right})')
-
-    def _audio_sample_batch(self, data, frames):
-        if self.trace:
-            print(f'audio_sample_batch(data={id(data)}, frames={frames})')
-        return frames
-
-    def _input_poll(self):
-        if self.trace:
-            print('input_poll()')
-
-    def _input_state(self, port, device, index, id_):
-        if self.trace:
-            print(f'input_state(port={port}, '
-                  f'device={rcl("DEVICE", device)}, '
-                  f'index={rcl("DEVICE_INDEX", index)}, '
-                  f'id={rcl("DEVICE_ID", id_)})')
-        return 0
-
-    def _log(self, level, msg):
+    def _log(self, level: int, msg: ctypes.c_char_p):
         level_name = ''.join(rcl('LOG', level))
         print(f'[{level_name}] {ctypes.string_at(msg).decode("utf-8").rstrip()}')
 
-    def _get_system_directory(self):
-        if self.trace:
-            print(f'get_system_directory()')
+    def _video_refresh(self, data: ctypes.c_void_p, width: int, height: int, pitch: int):
+        pass
+
+    def _audio_sample(self, left: int, right: int):
+        pass
+
+    def _audio_sample_batch(self, data: ctypes.c_void_p, frames: int) -> int:
+        return frames
+
+    def _input_poll(self):
+        pass
+
+    def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
+        return 0
+
+    def _get_system_directory(self) -> str:
         return ''
 
-    def _get_save_directory(self):
-        if self.trace:
-            print(f'get_save_directory()')
+    def _get_save_directory(self) -> str:
         return ''
 
-    def _set_geometry(self, base_size, max_size, aspect_ratio):
-        if self.trace:
-            print(f'set_geometry(base_size={base_size}, max_size={max_size}, aspect_ratio={aspect_ratio})')
+    def _set_geometry(self, base_size: tuple, max_size: tuple, aspect_ratio: float) -> bool:
         return True
 
-    def _set_timing(self, fps, sample_rate):
-        if self.trace:
-            print(f'set_timing(fps={fps}, sample_rate={sample_rate})')
+    def _set_timing(self, fps: float, sample_rate: float) -> bool:
         return True
 
-    def _set_pixel_format(self, fmt):
-        if self.trace:
-            print(f'set_pixel_format(fmt={rcl("PIXEL", fmt)})')
+    def _set_pixel_format(self, fmt: int) -> bool:
         return True
+
+
+class TraceStubMixin(EmulatedSystem):
+    def _video_refresh(self, data: ctypes.c_void_p, width: int, height: int, pitch: int):
+        print(f'video_refresh(data={id(data)}, width={width}, height={height}, pitch={pitch})')
+        super()._video_refresh(data, width, height, pitch)
+
+    def _audio_sample(self, left: int, right: int):
+        print(f'audio_sample(left={left}, right={right})')
+        super()._audio_sample(left, right)
+
+    def _audio_sample_batch(self, data: ctypes.c_void_p, frames: int) -> int:
+        print(f'audio_sample_batch(data={id(data)}, frames={frames})')
+        return super()._audio_sample_batch(data, frames)
+
+    def _input_poll(self):
+        print('input_poll()')
+        super()._input_poll()
+
+    def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
+        print(f'input_state(port={port}, '
+              f'device={rcl("DEVICE", device)}, '
+              f'index={rcl("DEVICE_INDEX", index)}, '
+              f'id={rcl("DEVICE_ID", id_)})')
+        return super()._input_state(port, device, index, id_)
+
+    def _get_system_directory(self) -> str:
+        print(f'get_system_directory()')
+        return super()._get_system_directory()
+
+    def _get_save_directory(self) -> str:
+        print(f'get_save_directory()')
+        return super()._get_save_directory()
+
+    def _set_geometry(self, base_size: tuple, max_size: tuple, aspect_ratio: float) -> bool:
+        print(f'set_geometry(base_size={base_size}, max_size={max_size}, aspect_ratio={aspect_ratio})')
+        return super()._set_geometry(base_size, max_size, aspect_ratio)
+
+    def _set_timing(self, fps: float, sample_rate: float) -> bool:
+        print(f'set_timing(fps={fps}, sample_rate={sample_rate})')
+        return super()._set_timing(fps, sample_rate)
+
+    def _set_pixel_format(self, fmt: int) -> bool:
+        print(f'set_pixel_format(fmt={rcl("PIXEL", fmt)})')
+        return super()._set_pixel_format(fmt)
 
 
 class MemoryOpsMixin(EmulatedSystem):
@@ -290,7 +313,7 @@ class MemoryOpsMixin(EmulatedSystem):
         # get useful info about the game from the rom's header
         self.game_info = GameInfoReader().get_info(data, self.name)
 
-    def _environment(self, cmd, data):
+    def _environment(self, cmd: int, data: ctypes.c_void_p) -> bool:
         if cmd == ENVIRONMENT_SET_MEMORY_MAPS:
             # FIXME: partial implementation good enough for Gambatte
             maps = ctypes.cast(data, ctypes.POINTER(retro_memory_map))
@@ -305,7 +328,7 @@ class MemoryOpsMixin(EmulatedSystem):
                 desc_list.append(((desc.start, desc.start + length), desc.ptr))
             desc_list.sort()
             self.memory_map = collections.OrderedDict(desc_list)
-            if getattr(self, 'trace', False):
+            if isinstance(self, TraceStubMixin):
                 print(self.memory_map)
             return True
         super()._environment(cmd, data)
@@ -350,7 +373,7 @@ class MemoryOpsMixin(EmulatedSystem):
         for index, (code, enabled) in list(self._loaded_cheats.items()):
             self.llw.cheat_set(index, enabled, code)
 
-    def __find_memory_bank(self, offset, length, bank_switch):
+    def __find_memory_bank(self, offset: int, length: int, bank_switch: int) -> ctypes.c_void_p:
         if not self.memory_map:
             mem_size = self.llw.get_memory_size(MEMORY_SYSTEM_RAM)
             mem_data = self.llw.get_memory_data(MEMORY_SYSTEM_RAM)
@@ -366,17 +389,17 @@ class MemoryOpsMixin(EmulatedSystem):
         raise IndexError(f'({hex(offset)}, {hex(length)}) '
                          'address range not found in any memory map region')
 
-    def peek_memory_region(self, offset, length, bank_switch=0):
+    def peek_memory_region(self, offset: int, length: int, bank_switch: int = 0) -> bytes:
         pointer = self.__find_memory_bank(offset, length, bank_switch)
         buffer = ctypes.create_string_buffer(length)
         ctypes.memmove(buffer, pointer, length)
         return buffer.raw
 
-    def poke_memory_region(self, offset, data, bank_switch=0):
+    def poke_memory_region(self, offset: int, data: bytes, bank_switch: int = 0):
         pointer = self.__find_memory_bank(offset, len(data), bank_switch)
         ctypes.memmove(pointer, data, len(data))
 
-    def memory_to_string(self, mem_type):
+    def memory_to_string(self, mem_type: int):
         """
         Copies data from the given libretro memory buffer into a new string.
         """

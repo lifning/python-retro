@@ -13,7 +13,6 @@ def main():
 
     # run each frame until closed.
     running = True
-
     while running:
         emu.run()
         for event in pygame.event.get():

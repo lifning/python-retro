@@ -2,6 +2,8 @@
 Read input from a bsnes movie file (*.bsv)
 """
 import struct
+
+from py_retro.core import EmulatedSystem
 from py_retro.retro_constants import _retro_constant_lookup
 
 BSV_MAGIC = b'BSV1'
@@ -22,7 +24,7 @@ class CartMismatch(Exception):
     pass
 
 
-class BSV:
+class BSV(EmulatedSystem):
     """
     Iterate the contents of the given BSV file.
 
@@ -33,7 +35,14 @@ class BSV:
     yield an infinite stream of zeroes.
     """
 
-    def __init__(self, bsv_file):
+    def __init__(self, libpath, bsv_file, restore=True, expected_cart_crc=None, **kw):
+        """
+        Sets the BSV file containing the log of input states.
+
+        !!! Also restores the savestate contained in the file !!!
+        !!! unless the argument 'restore' is set to False.    !!!
+        """
+        super().__init__(libpath, **kw)
         if isinstance(bsv_file, str):
             self.handle = open(bsv_file, 'rb')
         else:
@@ -52,13 +61,29 @@ class BSV:
         self.active = True
         self.__debug = dict()
 
-    def _extract(self, s):
+        if expected_cart_crc is not None and self.cart_crc != expected_cart_crc:
+            raise CartMismatch(f'Movie is for cart with CRC32 {self.cart_crc}, expected {expected_cart_crc}')
+
+        if restore:
+            # retry loop for the multi-threaded ParaLLEl-N64,
+            # which refuses to load state while 'initializing'
+            for i in range(100):
+                # noinspection PyBroadException
+                try:
+                    self.unserialize(self.state_data)
+                    break
+                except:
+                    if i == 99:
+                        raise
+                    self.run()
+
+    def _extract(self, s: struct.Struct) -> tuple:
         """
         Read an instance of the given structure from the given file handle.
         """
         return s.unpack(self.handle.read(s.size))
 
-    def input_state(self, port, device, index, id_):
+    def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
         if self.active:
             try:
                 val = self._extract(RECORD_STRUCT)[0]
@@ -74,37 +99,5 @@ class BSV:
             except struct.error:
                 # end of the file
                 self.active = False
-        return 0
-
-
-def set_input_state_file(core, bsv_file, restore=True, expected_cart_crc=None):
-    """
-    Sets the BSV file containing the log of input states.
-
-    !!! Also restores the savestate contained in the file !!!
-    !!! unless the argument 'restore' is set to False.    !!!
-
-    Unlike core.EmulatedSNES.set_input_state_cb, this function takes a
-    filename to use, rather than a function.
-    """
-
-    bsv = BSV(bsv_file)
-
-    if expected_cart_crc is not None and bsv.cart_crc != expected_cart_crc:
-        raise CartMismatch(f'Movie is for cart with CRC32 {bsv.cart_crc}, expected {expected_cart_crc}')
-
-    if restore:
-        # retry loop for the multi-threaded ParaLLEl-N64,
-        # which refuses to load state while 'initializing'
-        for i in range(100):
-            # noinspection PyBroadException
-            try:
-                core.unserialize(bsv.state_data)
-                break
-            except:
-                if i == 99:
-                    raise
-                core.run()
-
-    core.set_input_state_cb(bsv.input_state)
-    return bsv
+        # else...
+        return super()._input_state(port, device, index, id_)

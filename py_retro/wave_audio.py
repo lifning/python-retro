@@ -46,12 +46,12 @@ class WavFileAudioMixin(EmulatedSystem):
         return super()._set_timing(fps, sample_rate)
 
     def _audio_sample(self, left, right):
-        if self.__wav and self.__wav.getfp():
+        if self.__wav and self.__wav._file:
             self.__wav.writeframesraw(g_stereo_struct.pack(left, right))
         super()._audio_sample(left, right)
 
     def _audio_sample_batch(self, data, frames):
-        if self.__wav and self.__wav.getfp():
+        if self.__wav and self.__wav._file:
             size = frames * self.__wav.getnchannels() * self.__wav.getsampwidth()
             self.__wav.writeframesraw(ctypes.string_at(data, size)[:size])
         return super()._audio_sample_batch(data, frames)
