@@ -35,6 +35,9 @@ value to be that of the last one in which it *did* appear, or zero if it hasn't.
 import collections
 import struct
 import sys
+from contextlib import contextmanager
+
+from .core import EmulatedSystem, SerializationError
 
 TIL_MAGIC = b'TIL0'
 PACKET_HEADER = struct.Struct('<HI')
@@ -43,134 +46,150 @@ PACKET_TYPE_SAVESTATE = 1
 INPUT_POLL_SET = struct.Struct('<4sh')
 
 
-class TilRecorder:
-    def __init__(self, emu, destination_file, validation_state=True):
-        self.emu = emu
-        self.handle = destination_file
-        self._validation_state = validation_state
-        self._first_poll = True
+class TilRecorderInputMixin(EmulatedSystem):
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
+        self.__handle = None
+        self.__first_poll = True
+        self.__current_poll = collections.OrderedDict()
+        self.__last_inputs = dict()
 
-    def __enter__(self):
-        self._wrapped_poll_cb = self.emu._input_poll_wrapper
-        self._wrapped_state_cb = self.emu._input_state_wrapper
-        self.emu.set_input_poll_cb(self.input_poll)
-        self.emu.set_input_state_cb(self.input_state)
-        self.handle.write(TIL_MAGIC)
+    @contextmanager
+    def til_record(self, destination_file, validation_state=True):
+        self.__handle = destination_file
+        self.__handle.write(TIL_MAGIC)
         try:
-            self.insert_savestate()
+            self.til_insert_savestate()
             pass
-        except:  # TODO: make core throw something specific...
-            print(f'{self.__class__.__name__}: could not save initial state.',
+        except SerializationError:
+            print(f'TilRecorder: could not save initial state.',
                   file=sys.stderr)
-        self._current_poll = collections.OrderedDict()
-        self._last_inputs = dict()
+        self.__first_poll = True
+        self.__current_poll = collections.OrderedDict()
+        self.__last_inputs = dict()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.emu.set_input_state_cb(self._wrapped_state_cb)
-        self.emu.set_input_poll_cb(self._wrapped_poll_cb)
-        self._wrapped_poll_cb = lambda: None
-        self._wrapped_state_cb = lambda *args: 0
-        self.input_poll()  # write last input packet
-        if self._validation_state:
+        yield
+
+        self._input_poll()  # write last input packet
+        if validation_state:
             try:
-                self.insert_savestate()
-            except:
-                print(f'{self.__class__.__name__}: could not save validation state.',
+                self.til_insert_savestate()
+            except SerializationError:
+                print(f'TilRecorder: could not save validation state.',
                       file=sys.stderr)
+        self.__handle = None
 
-    def insert_savestate(self):
-        state = self.emu.serialize()
-        self.handle.write(PACKET_HEADER.pack(PACKET_TYPE_SAVESTATE, len(state)))
-        self.handle.write(state)
+    def til_insert_savestate(self):
+        state = self.serialize()
+        self.__handle.write(PACKET_HEADER.pack(PACKET_TYPE_SAVESTATE, len(state)))
+        self.__handle.write(state)
 
-    def input_poll(self):
-        if self._first_poll:
-            assert not self._current_poll
-            self._first_poll = False
-        else:
+    def _input_poll(self):
+        if self.__first_poll:
+            assert not self.__current_poll
+            self.__first_poll = False
+        elif self.__handle:
             data = bytearray()
-            for key, val in self._current_poll.items():
-                if self._last_inputs.get(key, 0) != val:
+            for key, val in self.__current_poll.items():
+                if self.__last_inputs.get(key, 0) != val:
                     data.extend(INPUT_POLL_SET.pack(key, val))
-            self.handle.write(PACKET_HEADER.pack(PACKET_TYPE_INPUT, len(data)))
-            self.handle.write(data)
-            self._last_inputs.update(self._current_poll)
-            self._current_poll.clear()
-            self._wrapped_poll_cb()
+            self.__handle.write(PACKET_HEADER.pack(PACKET_TYPE_INPUT, len(data)))
+            self.__handle.write(data)
+            self.__last_inputs.update(self.__current_poll)
+            self.__current_poll.clear()
+        super()._input_poll()
 
-    def input_state(self, port, device, index, id_):
-        val = self._wrapped_state_cb(port, device, index, id_)
-        key = bytes((port, device, index, id_))
-        if key in self._current_poll:
-            if self._current_poll[key] != val:
-                print(f'{self.__class__.__name__}: Inconsistent input_state({key}): '
-                      f'{val} vs. {self._current_poll[key]}', file=sys.stderr)
-        self._current_poll[key] = val
+    def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
+        val = super()._input_state(port, device, index, id_)
+        if self.__handle:
+            key = bytes((port, device, index, id_))
+            if key in self.__current_poll:
+                if self.__current_poll[key] != val:
+                    print(f'TilRecorder: Inconsistent input_state({key}): '
+                          f'{val} vs. {self.__current_poll[key]}', file=sys.stderr)
+            self.__current_poll[key] = val
         return val
 
 
-class TilPlayer:
-    def __init__(self, emu, source_file, fix_desyncs=False):
-        self.handle = source_file
-        self.emu = emu
-        self.emu.set_input_poll_cb(self.input_poll)
-        self.emu.set_input_state_cb(self.input_state)
+class TilPlayerInputMixin(EmulatedSystem):
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
+        self.__handle = None
         self.finished = False
-        self._fix_desyncs = fix_desyncs
-        self._inputs = dict()
+        self.__fix_desyncs = False
+        self.__inputs = dict()
 
-        self._peek_first_packet()
+    @contextmanager
+    def til_playback(self, source_file, fix_desyncs=False):
+        self.__handle = source_file
+        self.finished = False
+        self.__fix_desyncs = fix_desyncs
+        self.__inputs = dict()
 
-    def _peek_first_packet(self):
-        assert self.handle.read(len(TIL_MAGIC)) == TIL_MAGIC
-        pos = self.handle.tell()
-        header = self.handle.read(PACKET_HEADER.size)
+        self.__peek_first_packet()
+
+        yield
+
+        self.__handle = None
+
+    def __peek_first_packet(self):
+        assert self.__handle.read(len(TIL_MAGIC)) == TIL_MAGIC
+        pos = self.__handle.tell()
+        header = self.__handle.read(PACKET_HEADER.size)
         packet_type, size = PACKET_HEADER.unpack(header)
         if packet_type == PACKET_TYPE_SAVESTATE:
-            self._load_savestate(self.handle.read(size))
+            self.__load_savestate(self.__handle.read(size))
         else:
-            print(f'{self.__class__.__name__}: No initial savestate present.')
-            self.handle.seek(pos)
+            print(f'TilPlayer: No initial savestate present.')
+            self.__handle.seek(pos)
 
-    def _load_savestate(self, data):
+    def __load_savestate(self, data):
         try:
-            self.emu.unserialize(data)
-        except:
-            print(f'{self.__class__.__name__}: could not unserialize savestate.',
+            self.unserialize(data)
+        except SerializationError:
+            print(f'TilPlayer: could not unserialize savestate.',
                   file=sys.stderr)
 
-    def _validate_savestate(self, data):
+    def __validate_savestate(self, data):
         try:
-            if self.emu.serialize() != data:
-                print(f'{self.__class__.__name__}: savestate mismatch, possible desync.',
+            if self.serialize() != data:
+                print(f'TilPlayer: savestate mismatch, possible desync.',
                       file=sys.stderr)
-                if self._fix_desyncs:
-                    self._load_savestate(data)
-        except:
-            print(f'{self.__class__.__name__}: error in (un)serialization.')
+                if self.__fix_desyncs:
+                    self.__load_savestate(data)
+        except SerializationError:
+            print(f'TilPlayer: error in (un)serialization.')
 
-    def input_poll(self):
+    def _input_poll(self):
+        if self.finished or not self.__handle:
+            super()._input_poll()
+            return
+
         packet_type = None
         while not self.finished and packet_type != PACKET_TYPE_INPUT:
-            header = self.handle.read(PACKET_HEADER.size)
+            header = self.__handle.read(PACKET_HEADER.size)
             if len(header) < PACKET_HEADER.size:
                 self.finished = True
-                self._inputs.clear()
+                self.__inputs.clear()
+                print('TilPlayer: finished playback.')
             else:
                 packet_type, size = PACKET_HEADER.unpack(header)
-                data = self.handle.read(size)
+                data = self.__handle.read(size)
                 if len(data) < size:
-                    print(f'{self.__class__.__name__}: incomplete packet, maybe corrupt file?'
+                    print('TilPlayer: incomplete packet, maybe corrupt file?'
                           f'packet type {packet_type}, expected {size} bytes, got {len(data)}.',
                           file=sys.stderr)
                     self.finished = True
                 elif packet_type == PACKET_TYPE_INPUT:
-                    self._inputs.update(INPUT_POLL_SET.iter_unpack(data))
+                    self.__inputs.update(INPUT_POLL_SET.iter_unpack(data))
                 elif packet_type == PACKET_TYPE_SAVESTATE:
-                    self._validate_savestate(data)
+                    self.__validate_savestate(data)
                 else:
-                    print(f'{self.__class__.__name__}: unknown tag: {packet_type}.')
+                    print(f'TilPlayer: unknown tag: {packet_type}.')
 
-    def input_state(self, port, device, index, id_):
-        val = self._inputs.get(bytes((port, device, index, id_)), 0)
+    def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
+        if self.finished or not self.__handle:
+            return super()._input_state(port, device, index, id_)
+
+        val = self.__inputs.get(bytes((port, device, index, id_)), 0)
         return val

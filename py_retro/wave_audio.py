@@ -14,8 +14,8 @@ g_stereo_struct = struct.Struct('<hh')
 
 
 class WavFileAudioMixin(EmulatedSystem):
-    def __init__(self, libpath, **_):
-        super().__init__(libpath, **_)
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
         self.__wav = None
         self.__sample_rate = None
 

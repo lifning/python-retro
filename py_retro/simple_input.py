@@ -1,30 +1,19 @@
-MAX_PLAYERS = 8
-MAX_MAPPINGS = 20
+import collections
 
-padcache = [[0] * MAX_MAPPINGS for i in range(MAX_PLAYERS)]
-
-
-def simple_input_poll():
-    pass
+from .core import EmulatedSystem
 
 
-def simple_input_state(port, device, index, id):
-    global padcache
-    return padcache[port][id]
+def _recursive_defaultdict():
+    return collections.defaultdict(_recursive_defaultdict)
 
 
-def set_input_internal(core):
-    core.set_input_poll_cb(simple_input_poll)
-    core.set_input_state_cb(simple_input_state)
+class StatefulInputMixin(EmulatedSystem):
+    def __init__(self, libpath, **kw):
+        super().__init__(libpath, **kw)
+        self.__storage = _recursive_defaultdict()
 
+    def _input_state(self, port: int, device: int, index: int, id_: int):
+        return self.__storage[port][device][index][id_]
 
-def set_state(port, device, index, id, state):
-    # currently index and device go unused here...
-    padcache[port][id] = state
-
-
-def set_state_digital(port, state):
-    global padcache
-    for id in range(16):
-        padcache[port][id] = state & 1
-        state >>= 1
+    def set_state(self, port: int, device: int, index: int, id_: int, state: int):
+        self.__storage[port][device][index][id_] = state
