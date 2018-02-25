@@ -15,7 +15,8 @@ def main():
 
     output_file = os.path.join(tempfile.gettempdir(), 'output.webm')
 
-    with emu.av_record(output_file, '-qmin 0 -qmax 0 -lossless 1'.split()):
+    with emu.av_record(output_file,
+                       '-c:v libvpx-vp9 -qmin 0 -qmax 0 -lossless 1'.split()):
         # run for about 2 minutes
         for i in range(2*60*60):
             emu.run()
