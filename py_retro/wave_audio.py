@@ -19,7 +19,7 @@ class WavFileAudioMixin(EmulatedSystem):
         self.__wav = None
         self.__sample_rate = None
 
-    def open_wav_file(self, wav_file):
+    def wav_record(self, wav_file):
         """
         Records audio to the given .wav file.
 

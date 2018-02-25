@@ -6,6 +6,31 @@ from ..retro_constants import \
 from ..core import EmulatedSystem
 
 
+pixel_format_masks = {
+    PIXEL_FORMAT_0RGB1555: (
+        0b0111110000000000,
+        0b0000001111100000,
+        0b0000000000011111, 0
+    ),
+    PIXEL_FORMAT_RGB565: (
+        0b1111100000000000,
+        0b0000011111100000,
+        0b0000000000011111, 0
+    ),
+    PIXEL_FORMAT_XRGB8888: (
+        0xff0000,
+        0x00ff00,
+        0x0000ff, 0
+    ),
+}
+
+pixel_format_depths = {
+    PIXEL_FORMAT_0RGB1555: 15,
+    PIXEL_FORMAT_RGB565: 16,
+    PIXEL_FORMAT_XRGB8888: 32,
+}
+
+
 class PygameVideoMixin(EmulatedSystem):
     def __init__(self, libpath, **kw):
         self._set_pixel_format(PIXEL_FORMAT_0RGB1555)  # original libsnes default
@@ -15,22 +40,10 @@ class PygameVideoMixin(EmulatedSystem):
         self.surface = None
 
     def _set_pixel_format(self, fmt: int) -> bool:
-        if fmt == PIXEL_FORMAT_0RGB1555:
-            self.__bits_per_pixel = 15
-            self.__bit_masks = (0b0111110000000000,
-                                0b0000001111100000,
-                                0b0000000000011111, 0)
-        elif fmt == PIXEL_FORMAT_RGB565:
-            self.__bits_per_pixel = 16
-            self.__bit_masks = (0b1111100000000000,
-                                0b0000011111100000,
-                                0b0000000000011111, 0)
-        elif fmt == PIXEL_FORMAT_XRGB8888:
-            self.__bits_per_pixel = 32
-            self.__bit_masks = (0xff0000,
-                                0x00ff00,
-                                0x0000ff, 0)
-        else:
+        try:
+            self.__bits_per_pixel = pixel_format_depths[fmt]
+            self.__bit_masks = pixel_format_masks[fmt]
+        except KeyError:
             print(f'Unsupported pixel format {rcl("PIXEL", fmt)}')
             return False
         # i.e. results in a surface width of "pitch//((15+7)//8)" = "pitch//2" for 15-bit

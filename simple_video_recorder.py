@@ -24,8 +24,8 @@ def main():
     temp_aud = f'{temp_name}.wav'
     output_file = os.path.join(tempfile.gettempdir(), 'output.webm')
 
-    with emu.open_video_file(temp_vid, '-qmin 0 -qmax 0 -lossless 1'.split()):
-        with emu.open_wav_file(temp_aud):
+    with emu.video_record(temp_vid, '-qmin 0 -qmax 0 -lossless 1'.split()):
+        with emu.wav_record(temp_aud):
             # run for about 2 minutes
             for i in range(2*60*60):
                 emu.run()
