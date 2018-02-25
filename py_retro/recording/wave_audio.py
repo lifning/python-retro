@@ -6,7 +6,7 @@ import wave
 import ctypes
 import struct
 
-from .core import EmulatedSystem
+from ..core import EmulatedSystem
 
 g_sizeof_int16 = 2
 g_stereo_channels = 2

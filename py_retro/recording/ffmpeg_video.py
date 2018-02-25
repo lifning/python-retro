@@ -5,8 +5,8 @@ WAV-file output for libretro Audio.
 import subprocess
 import pygame
 
-from .retro_constants import PIXEL_FORMAT_0RGB1555, PIXEL_FORMAT_XRGB8888, PIXEL_FORMAT_RGB565, rcl
-from .pygame_emu.video import PygameVideoMixin, pixel_format_depths, pixel_format_masks
+from ..api.retro_constants import PIXEL_FORMAT_0RGB1555, PIXEL_FORMAT_XRGB8888, PIXEL_FORMAT_RGB565, rcl
+from ..interactive.pygame_video import PygameVideoMixin, pixel_format_depths, pixel_format_masks
 
 pixel_format_ffmpeg_names = {
     PIXEL_FORMAT_0RGB1555: 'rgb555le',
@@ -15,8 +15,6 @@ pixel_format_ffmpeg_names = {
 }
 
 
-# Believe it or not, Pygame is a more competent image library than PIL,
-# at least when it comes to converting between pixel formats
 class FfmpegVideoMixin(PygameVideoMixin):
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
@@ -74,5 +72,10 @@ class FfmpegVideoMixin(PygameVideoMixin):
     def run(self):
         super().run()
         if self.surface and self.__framebuffer:
-            pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
-            self.__pipe.stdin.write(self.__framebuffer.get_view('2').raw)
+            # skip copying pixel data redundantly if we can use self.surface directly
+            if self.surface.get_size() == self.__framebuffer.get_size():
+                write_surface = self.surface
+            else:
+                pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
+                write_surface = self.__framebuffer
+            self.__pipe.stdin.write(write_surface.get_view('2').raw)

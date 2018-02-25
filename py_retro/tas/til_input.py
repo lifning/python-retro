@@ -37,7 +37,7 @@ import struct
 import sys
 from contextlib import contextmanager
 
-from .core import EmulatedSystem, SerializationError
+from ..core import EmulatedSystem, SerializationError
 
 TIL_MAGIC = b'TIL0'
 PACKET_HEADER = struct.Struct('<HI')

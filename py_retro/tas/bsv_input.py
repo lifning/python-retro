@@ -3,8 +3,8 @@ Read input from a bsnes movie file (*.bsv)
 """
 import struct
 
-from py_retro.core import EmulatedSystem
-from py_retro.retro_constants import _retro_constant_lookup
+from ..core import EmulatedSystem
+from ..api.retro_constants import _retro_constant_lookup
 
 BSV_MAGIC = b'BSV1'
 HEADER_STRUCT = struct.Struct('<4s3I')
@@ -24,17 +24,7 @@ class CartMismatch(Exception):
     pass
 
 
-class BSV(EmulatedSystem):
-    """
-    Iterate the contents of the given BSV file.
-
-    filenameOrHandle should either be a string containing the path to a BSV
-    file, or a file-like object containing a BSV file.
-
-    Once we've reached the end of the input recorded in the BSV file, we just
-    yield an infinite stream of zeroes.
-    """
-
+class BsvPlayerInputMixin(EmulatedSystem):
     def __init__(self, libpath, bsv_file, restore=True, expected_cart_crc=None, **kw):
         """
         Sets the BSV file containing the log of input states.
