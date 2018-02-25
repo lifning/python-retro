@@ -72,10 +72,5 @@ class FfmpegVideoMixin(PygameVideoMixin):
     def run(self):
         super().run()
         if self.surface and self.__framebuffer:
-            # skip copying pixel data redundantly if we can use self.surface directly
-            if self.surface.get_size() == self.__framebuffer.get_size():
-                write_surface = self.surface
-            else:
-                pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
-                write_surface = self.__framebuffer
-            self.__pipe.stdin.write(write_surface.get_view('2').raw)
+            pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
+            self.__pipe.stdin.write(self.__framebuffer.get_view('2').raw)

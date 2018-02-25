@@ -2,6 +2,7 @@
 Read input from a bsnes movie file (*.bsv)
 """
 import struct
+import typing
 
 from ..core import EmulatedSystem
 from ..api.retro_constants import _retro_constant_lookup
@@ -22,6 +23,16 @@ class CorruptFile(Exception):
 
 class CartMismatch(Exception):
     pass
+
+
+def extract_savestate_from_bsv(bsv_file: typing.BinaryIO) -> bytes:
+    """
+    Utility function to extract the savestate data from a .bsv movie.
+    """
+    magic, version, crc, state_size = HEADER_STRUCT.unpack(bsv_file.read(HEADER_STRUCT.size))
+    if magic not in (BSV_MAGIC, BSV_SSNES_MAGIC):
+        raise CorruptFile(f'File {bsv_file} has bad magic {magic}, expected {BSV_MAGIC}')
+    return bsv_file.read(state_size)
 
 
 class BsvPlayerInputMixin(EmulatedSystem):
