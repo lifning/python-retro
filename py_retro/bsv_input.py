@@ -43,26 +43,22 @@ class BSV(EmulatedSystem):
         !!! unless the argument 'restore' is set to False.    !!!
         """
         super().__init__(libpath, **kw)
-        if isinstance(bsv_file, str):
-            self.handle = open(bsv_file, 'rb')
-        else:
-            self.handle = bsv_file
+        self.__handle = bsv_file
 
         # Read and sanity-check the header.
-        magic, serializer_version, cart_crc, state_size = self._extract(HEADER_STRUCT)
+        magic, serializer_version, cart_crc, state_size = self.__extract(HEADER_STRUCT)
 
         if magic not in (BSV_MAGIC, BSV_SSNES_MAGIC):
             raise CorruptFile(f'File {bsv_file} has bad magic {magic}, expected {BSV_MAGIC}')
 
-        self.serializer_version = serializer_version
-        self.cart_crc = cart_crc
-        self.state_data = self.handle.read(state_size)
+        self.__serializer_version = serializer_version
+        self.__cart_crc = cart_crc
+        self.__state_data = self.__handle.read(state_size)
 
-        self.active = True
         self.__debug = dict()
 
-        if expected_cart_crc is not None and self.cart_crc != expected_cart_crc:
-            raise CartMismatch(f'Movie is for cart with CRC32 {self.cart_crc}, expected {expected_cart_crc}')
+        if expected_cart_crc is not None and self.__cart_crc != expected_cart_crc:
+            raise CartMismatch(f'Movie is for cart with CRC32 {self.__cart_crc}, expected {expected_cart_crc}')
 
         if restore:
             # retry loop for the multi-threaded ParaLLEl-N64,
@@ -70,23 +66,26 @@ class BSV(EmulatedSystem):
             for i in range(100):
                 # noinspection PyBroadException
                 try:
-                    self.unserialize(self.state_data)
+                    self.unserialize(self.__state_data)
                     break
                 except:
                     if i == 99:
                         raise
                     self.run()
 
-    def _extract(self, s: struct.Struct) -> tuple:
+    def get_savestate(self) -> bytes:
+        return self.__state_data
+
+    def __extract(self, s: struct.Struct) -> tuple:
         """
         Read an instance of the given structure from the given file handle.
         """
-        return s.unpack(self.handle.read(s.size))
+        return s.unpack(self.__handle.read(s.size))
 
     def _input_state(self, port: int, device: int, index: int, id_: int) -> int:
-        if self.active:
+        if self.__handle:
             try:
-                val = self._extract(RECORD_STRUCT)[0]
+                val = self.__extract(RECORD_STRUCT)[0]
                 old = self.__debug.setdefault((port, device, index, id_), val)
                 if val != old:
                     self.__debug[(port, device, index, id_)] = val
@@ -98,6 +97,6 @@ class BSV(EmulatedSystem):
                 return val
             except struct.error:
                 # end of the file
-                self.active = False
+                self.__handle = None
         # else...
         return super()._input_state(port, device, index, id_)
