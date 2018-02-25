@@ -2,7 +2,7 @@ import pyaudio
 import ctypes
 import struct
 
-from .core import EmulatedSystem, TraceStubMixin
+from ..core import EmulatedSystem, TraceStubMixin
 
 g_stereo_struct = struct.Struct('<hh')
 

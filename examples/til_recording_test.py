@@ -2,8 +2,8 @@
 import pygame
 import sys
 
-from py_retro.pygame_emu import PygameSystem
-from py_retro.til_input import TilRecorderInputMixin, TilPlayerInputMixin
+from py_retro.interactive import PygameSystem
+from py_retro.tas.til_input import TilRecorderInputMixin, TilPlayerInputMixin
 
 lib_path, rom_path, til_path = sys.argv[1:4]
 

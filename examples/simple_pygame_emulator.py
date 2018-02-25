@@ -2,7 +2,7 @@
 import pygame
 import sys
 
-from py_retro.pygame_emu import PygameSystem
+from py_retro.interactive import PygameSystem
 
 libpath, rompath = sys.argv[1:3]
 

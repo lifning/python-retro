@@ -1,18 +1,17 @@
 import pygame
 
-from ..portaudio_audio import PortaudioMixin
-from .video import PygameVideoMixin, PygameDisplayMixin
-from .audio import PygameAudioMixin
-from .input import PygameJoystickMixin
+from .pygame_video import PygameVideoMixin, PygameDisplayMixin
+from .pygame_audio import PygameAudioMixin
+from .pygame_input import PygameJoystickMixin
 
-from ..core import EmulatedSystem
+# PygameAudioMixin is crashy
+from .portaudio_audio import PortaudioMixin
 
 
 class PygameSystem(
-    PortaudioMixin,  # PygameAudioMixin is crashy
+    PortaudioMixin,
     PygameDisplayMixin,
-    PygameJoystickMixin,
-    EmulatedSystem
+    PygameJoystickMixin
 ):
     def __init__(self, libpath, **kw):
         kw['trace'] = True

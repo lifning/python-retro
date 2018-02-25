@@ -1,6 +1,3 @@
-from .retro_ctypes import *
-
-
 # workarounds
 def HACK_need_audio_sample_batch(name):
     for x in ['FCEUmm', 'Gambatte', 'Genesis Plus GX', 'SNES9x', 'VBA Next']:

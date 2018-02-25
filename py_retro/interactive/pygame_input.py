@@ -1,6 +1,6 @@
 import pygame
 
-from ..retro_constants import *
+from ..api.retro_constants import *
 from ..core import EmulatedSystem
 
 # xinput mappings because lazy
