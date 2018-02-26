@@ -1,7 +1,8 @@
 #!/usr/bin/env python3.6
 import pygame
-import sys
+import sys, os
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from py_retro.interactive import PygameSystem
 
 libpath, rompath = sys.argv[1:3]
