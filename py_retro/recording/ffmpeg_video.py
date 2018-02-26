@@ -71,6 +71,6 @@ class FfmpegVideoMixin(PygameVideoMixin):
 
     def run(self):
         super().run()
-        if self.surface and self.__framebuffer:
+        if self.surface and self.__framebuffer and self.__pipe:
             pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
             self.__pipe.stdin.write(self.__framebuffer.get_view('2').raw)
