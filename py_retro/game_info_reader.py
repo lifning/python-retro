@@ -82,7 +82,7 @@ class MemoryOpsMixin(EmulatedSystem):
             if isinstance(self, TraceStubMixin):
                 print(self.memory_map)
             return True
-        super()._environment(cmd, data)
+        return super()._environment(cmd, data)
 
     def cheat_add(self, index, code, enabled=True):
         """ Stores the given cheat code at the given index in the cheat list.
