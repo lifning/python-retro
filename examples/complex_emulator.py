@@ -4,7 +4,7 @@ from subprocess import SubprocessError
 import pygame
 import sys, os
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from py_retro.interactive import PygameSystem
 from py_retro.recording import AVRecorderSystem
 from py_retro.tas import TilRecorderInputMixin, TilPlayerInputMixin
