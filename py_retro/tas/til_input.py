@@ -133,6 +133,9 @@ class TilPlayerInputMixin(EmulatedSystem):
     def til_stop(self):
         self.__handle = None
 
+    def til_is_playing(self) -> bool:
+        return bool(self.__handle)
+
     def __peek_first_packet(self):
         assert self.__handle.read(len(TIL_MAGIC)) == TIL_MAGIC
         pos = self.__handle.tell()
@@ -152,14 +155,14 @@ class TilPlayerInputMixin(EmulatedSystem):
                   file=sys.stderr)
 
     def __validate_savestate(self, data):
-        try:
-            if self.serialize() != data:
-                print(f'TilPlayer: savestate mismatch, possible desync.',
-                      file=sys.stderr)
-                if self.__fix_desyncs:
+        if self.__fix_desyncs:
+            try:
+                if self.serialize() != data:
+                    print(f'TilPlayer: savestate mismatch, possible desync.',
+                          file=sys.stderr)
                     self.__load_savestate(data)
-        except SerializationError:
-            print(f'TilPlayer: error in (un)serialization.')
+            except SerializationError:
+                print(f'TilPlayer: error in (un)serialization.')
 
     def _input_poll(self):
         if not self.__handle:

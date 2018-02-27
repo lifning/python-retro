@@ -33,7 +33,9 @@ class FfmpegVideoMixin(PygameVideoMixin):
                f' -r {fps} -i - -an -pix_fmt yuv420p').split()
         cmd.extend(extra_params)
         cmd.append(output_file)
-        self.__pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        self.__pipe = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                       stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.STDOUT)
         return self.__pipe
 
     def get_video_resolution(self) -> tuple:
@@ -72,5 +74,8 @@ class FfmpegVideoMixin(PygameVideoMixin):
     def run(self):
         super().run()
         if self.surface and self.__framebuffer and self.__pipe:
+            if self.__pipe.stdin.closed:
+                self.__pipe = None
+                return
             pygame.transform.scale(self.surface, self.__framebuffer.get_size(), self.__framebuffer)
             self.__pipe.stdin.write(self.__framebuffer.get_view('2').raw)
