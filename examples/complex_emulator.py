@@ -1,4 +1,6 @@
 #!/usr/bin/env python3.6
+from subprocess import SubprocessError
+
 import pygame
 import sys, os
 
@@ -36,34 +38,49 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F2:
-                    with open(f'{rompath}.state', 'wb') as f:
-                        f.write(emu.serialize())
-                        print('saved state.')
+                    try:
+                        with open(f'{rompath}.state', 'wb') as f:
+                            f.write(emu.serialize())
+                            print('saved state.')
+                    except IOError:
+                        print('could not write state.')
                 elif event.key == pygame.K_F4:
-                    with open(f'{rompath}.state', 'rb') as f:
-                        emu.unserialize(f.read())
-                        print('loaded state.')
+                    try:
+                        with open(f'{rompath}.state', 'rb') as f:
+                            emu.unserialize(f.read())
+                            print('loaded state.')
+                    except IOError:
+                        print('could not read state.')
                 elif event.key == pygame.K_o:
-                    with emu.til_record(open(f'{rompath}.til', 'wb')):
-                        print('recording til, press ESC to end...')
-                        while not pygame.key.get_pressed()[pygame.K_ESCAPE]:
-                            emu.run()
-                            pygame.event.pump()
-                        print('done recording til.')
+                    try:
+                        with emu.til_record(open(f'{rompath}.til', 'wb')):
+                            print('recording til, press ESC to end...')
+                            while not pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                                emu.run()
+                                pygame.event.pump()
+                            print('done recording til.')
+                    except IOError:
+                        print('could not write til.')
                 elif event.key == pygame.K_p:
-                    with emu.til_playback(open(f'{rompath}.til', 'rb')):
-                        print('playing til, press ESC to cancel...')
-                        while emu.til_is_playing() and not pygame.key.get_pressed()[pygame.K_ESCAPE]:
-                            emu.run()
-                            pygame.event.pump()
-                        print('done playing til.')
+                    try:
+                        with emu.til_playback(open(f'{rompath}.til', 'rb')):
+                            print('playing til, press ESC to cancel...')
+                            while emu.til_is_playing() and not pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                                emu.run()
+                                pygame.event.pump()
+                            print('done playing til.')
+                    except IOError:
+                        print('could not read til.')
                 elif event.key == pygame.K_v:
-                    with emu.av_record(f'{rompath}.webm', ['-c:v', 'libvpx-vp9']):
-                        print('recording video, press ESC to end...')
-                        while not pygame.key.get_pressed()[pygame.K_ESCAPE]:
-                            emu.run()
-                            pygame.event.pump()
-                        print('done recording video.')
+                    try:
+                        with emu.av_record(f'{rompath}.webm', ['-c:v', 'libvpx-vp9']):
+                            print('recording video, press ESC to end...')
+                            while not pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                                emu.run()
+                                pygame.event.pump()
+                            print('done recording video.')
+                    except SubprocessError:
+                        print('could not invoke ffmpeg.')
 
 
 if __name__ == "__main__":
