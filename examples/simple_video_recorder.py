@@ -4,7 +4,7 @@ import tempfile
 import os
 
 print(__file__)
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from py_retro.recording import AVRecorderSystem
 
 libpath, rompath = sys.argv[1:3]

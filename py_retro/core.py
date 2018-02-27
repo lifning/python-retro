@@ -9,7 +9,8 @@ _log_wrapper_mod = None
 # noinspection PyBroadException
 try:
     _log_wrapper_mod = ctypes.CDLL(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'c_ext', 'log_wrapper.so')
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     'c_ext', 'log_wrapper.so')
     )
     _log_wrapper_mod.handle_env_get_log_interface_restype = None
     _log_wrapper_mod.handle_env_get_log_interface_argtypes = [
