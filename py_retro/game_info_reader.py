@@ -13,6 +13,7 @@ class GameInfoReader:
         'gambatte': 'gbc',
         'bsnes': 'snes',
         'genesis plus gx': 'genesis',
+        'higan (super famicom accuracy)': 'snes',
     }
 
     @staticmethod
