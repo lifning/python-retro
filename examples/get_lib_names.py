@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.6
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from py_retro import core
