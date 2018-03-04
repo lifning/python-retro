@@ -218,7 +218,7 @@ class EmulatedSystem:
 
     def _log(self, level: int, msg: ctypes.c_char_p):
         level_name = ''.join(rcl('LOG', level))
-        print(f'[{level_name}] {ctypes.string_at(msg).decode("utf-8").rstrip()}')
+        print(f'[{level_name}] {ctypes.string_at(msg).decode("utf-8", errors="ignore").rstrip()}')
 
     def _video_refresh(self, data: ctypes.c_void_p, width: int, height: int, pitch: int):
         pass
