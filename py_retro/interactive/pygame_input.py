@@ -38,12 +38,18 @@ g_button_map = {
 class PygameJoystickMixin(EmulatedSystem):
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
+        self.__joystick = None
         pygame.joystick.init()
-        self.__joystick = pygame.joystick.Joystick(0)
-        self.__joystick.init()
+        if pygame.joystick.get_count() > 0:
+            self.__joystick = pygame.joystick.Joystick(0)
+            self.__joystick.init()
+        else:
+            print('No joystick devices found.')
         self.__joy_states = dict()
 
     def _input_poll(self):
+        if not self.__joystick:
+            return
         # TODO: multi support, per-pad configurable mappings.
         port = 0
         device = DEVICE_JOYPAD
@@ -60,6 +66,8 @@ class PygameJoystickMixin(EmulatedSystem):
                 self.__joy_states[key] = val
 
     def _input_state(self, port, device, index, id_):
+        if not self.__joystick:
+            return super()._input_state(port, device, index, id_)
         key = bytes((port, device, index, id_))
         val = self.__joy_states.get(key, 0)
         return val
