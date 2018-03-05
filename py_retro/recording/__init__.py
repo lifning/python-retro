@@ -1,7 +1,6 @@
 import os
 import subprocess
 import tempfile
-import threading
 from contextlib import contextmanager
 
 from .ffmpeg_video import FfmpegVideoMixin
@@ -21,16 +20,13 @@ class AVRecorderSystem(FfmpegVideoMixin, WavFileAudioMixin):
         cmd = ['ffmpeg', '-y', '-i', temp_vid, '-i', temp_aud, '-c:v', 'copy']
         cmd.extend(audio_params)
         cmd.append(output_file)
-        pipe = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-        )
-
-        def post_mux():
-            pipe.wait()
+        try:
+            subprocess.check_call(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+        finally:
             os.unlink(temp_vid)
             os.unlink(temp_aud)
-
-        threading.Thread(target=post_mux).start()
