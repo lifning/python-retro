@@ -68,16 +68,17 @@ class TilRecorderInputMixin(EmulatedSystem):
         self.__current_poll = collections.OrderedDict()
         self.__last_inputs = dict()
 
-        yield
-
-        self._input_poll()  # write last input packet
-        if validation_state:
-            try:
-                self.til_insert_savestate()
-            except SerializationError:
-                print(f'TilRecorder: could not save validation state.',
-                      file=sys.stderr)
-        self.__handle = None
+        try:
+            yield
+        finally:
+            self._input_poll()  # write last input packet
+            if validation_state:
+                try:
+                    self.til_insert_savestate()
+                except SerializationError:
+                    print(f'TilRecorder: could not save validation state.',
+                          file=sys.stderr)
+            self.__handle = None
 
     def til_insert_savestate(self):
         state = self.serialize()
