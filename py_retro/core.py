@@ -5,22 +5,11 @@ from .api import *
 
 # try to load C helper library
 wrapped_retro_log_print_t = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p)
-_log_wrapper_mod = None
 # noinspection PyBroadException
 try:
-    _log_wrapper_mod = __import__('cext')
-except ImportError:
-    print('Could not load Python C extension module, falling back to CDLL')
-    _log_wrapper_mod = ctypes.CDLL(
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     'c_ext_src', 'log_wrapper.so')
-    )
-    _log_wrapper_mod.handle_env_get_log_interface_restype = None
-    _log_wrapper_mod.handle_env_get_log_interface_argtypes = [
-        ctypes.POINTER(retro_log_callback),
-        wrapped_retro_log_print_t
-    ]
-except Exception as ex:
+    from . import cext
+except ImportError as ex:
+    cext = None
     print(f'Could not load variadic log wrapper module: {repr(ex)}')
 
 
@@ -47,7 +36,6 @@ class EmulatedSystem:
         self._input_poll_wrapper = retro_input_poll_t(self._input_poll)
         self._input_state_wrapper = retro_input_state_t(self._input_state)
         self._environment_wrapper = retro_environment_t(self._environment)
-        self._log_wrapper = wrapped_retro_log_print_t(self._log)
 
         self.llw.set_video_refresh(self._video_refresh_wrapper)
         self.llw.set_audio_sample_batch(self._audio_sample_batch_wrapper)
@@ -208,9 +196,8 @@ class EmulatedSystem:
             return False
 
         elif cmd == ENVIRONMENT_GET_LOG_INTERFACE:
-            if _log_wrapper_mod is not None:
-                _log_wrapper_mod.handle_env_get_log_interface(
-                    ctypes.cast(data, ctypes.POINTER(retro_log_callback)), self._log_wrapper)
+            if cext is not None:
+                cext.handle_env_get_log_interface(data, self._log)
                 return True
             else:
                 print('environment: could not set logging interface because C wrapper not loaded.')
