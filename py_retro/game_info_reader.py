@@ -63,7 +63,8 @@ class MemoryOpsMixin(EmulatedSystem):
     def load_game(self, data=None, path=None, meta=None, get_data_from_path=True):
         super().load_game(data, path, meta, get_data_from_path)
         # get useful info about the game from the rom's header
-        self.game_info = GameInfoReader().get_info(data, self.name)
+        if data is not None:
+            self.game_info = GameInfoReader().get_info(data, self.name)
 
     def _environment(self, cmd: int, data: ctypes.c_void_p) -> bool:
         if cmd == ENVIRONMENT_SET_MEMORY_MAPS:
