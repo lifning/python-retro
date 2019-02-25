@@ -96,7 +96,7 @@ class EmulatedSystem:
                 meta = meta.encode('utf-8')
             game_info.meta = ctypes.cast(meta, ctypes.c_char_p)
 
-        elif system_info.need_fullpath:
+        if system_info.need_fullpath and not os.path.isabs(path):
             raise LoadGameError(f'{self.name} needs a full path to the game file.')
 
         if data:
