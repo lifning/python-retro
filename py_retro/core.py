@@ -25,6 +25,7 @@ class EmulatedSystem:
     def __init__(self, libpath, **kw):
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
+        self.game_data = None
 
         # HACK: just put this in for software frames 'til we support SET_HW_RENDER
         self.env_vars = {b'parallel-n64-gfxplugin': b'angrylion'}
@@ -99,6 +100,7 @@ class EmulatedSystem:
             raise LoadGameError(f'{self.name} needs a full path to the game file.')
 
         if data:
+            self.game_data = data
             game_info.data = ctypes.cast(data, ctypes.c_void_p)
             game_info.size = len(data)
         elif not path:
