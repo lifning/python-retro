@@ -1,5 +1,5 @@
 """
-WAV-file output for libretro Audio.
+FFmpeg video file output for libretro video.
 """
 
 import subprocess
@@ -20,11 +20,12 @@ class FfmpegVideoMixin(PygameVideoMixin):
         super().__init__(libpath, **kw)
         pygame.display.init()
         self.__framebuffer = None
-        self.__bits_per_pixel = None
-        self.__bit_masks = None
+        # default to 32bit for some newer cores that don't bother, e.g. paraLLEl-n64...
+        self.__bits_per_pixel = pixel_format_depths[PIXEL_FORMAT_XRGB8888]
+        self.__bit_masks = pixel_format_masks[PIXEL_FORMAT_XRGB8888]
+        self.__pix_fmt = pixel_format_ffmpeg_names[PIXEL_FORMAT_XRGB8888]
         self.__fps = None
         self.__pipe = None
-        self.__pix_fmt = None
 
     def video_record(self, output_file, extra_params=()):
         w, h = self.__framebuffer.get_size()
