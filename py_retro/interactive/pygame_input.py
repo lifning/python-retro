@@ -40,11 +40,17 @@ class PygameJoystickMixin(EmulatedSystem):
         super().__init__(libpath, **kw)
         self.__joystick = None
         pygame.joystick.init()
-        if pygame.joystick.get_count() > 0:
-            self.__joystick = pygame.joystick.Joystick(0)
-            self.__joystick.init()
-        else:
-            print('No joystick devices found.')
+
+        joystick_index = kw.get("joystick", None)
+        joystick_count = pygame.joystick.get_count()
+
+        if joystick_index is not None:
+            if joystick_index >= joystick_count:
+                print(f'Joystick index out of range ({joystick_count} joysticks detected)')
+            else:
+                self.__joystick = pygame.joystick.Joystick(joystick_index)
+                self.__joystick.init()
+
         self.__joy_states = dict()
 
     def _input_poll(self):
