@@ -91,20 +91,27 @@ class EmulatedSystem:
             if get_data_from_path and not data:
                 data = open(path, 'rb').read()
 
+            if system_info.need_fullpath and not os.path.isabs(path):
+                # convert path to absolute path if the system needs it.
+                path = os.path.abspath(path)
+
+        elif system_info.need_fullpath:
+            raise LoadGameError(f'{self.name} requires a file path, but none was provided.')
+
         if meta:
             if isinstance(meta, str):
                 meta = meta.encode('utf-8')
             game_info.meta = ctypes.cast(meta, ctypes.c_char_p)
 
-        if system_info.need_fullpath and not os.path.isabs(path):
-            raise LoadGameError(f'{self.name} needs a full path to the game file.')
+        if not data and not path:
+            raise LoadGameError('Must provide either file path or raw loaded game!')
 
         if data:
             self.game_data = data
             game_info.data = ctypes.cast(data, ctypes.c_void_p)
             game_info.size = len(data)
-        elif not path:
-            raise LoadGameError('Must provide either file path or raw loaded game!')
+
+        game_info.path = path
 
         self.llw.load_game(ctypes.byref(game_info))
         self.llw.get_system_av_info(ctypes.byref(self.av_info))
