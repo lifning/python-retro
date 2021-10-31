@@ -15,6 +15,8 @@ g_audio_buffer_size = g_audio_buffer_samples * g_stereo_channels * g_sizeof_int1
 
 
 class PygameAudioMixin(EmulatedSystem):
+    """ This mixin plays audio provided by the core using pygame.mixer.
+    """
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__channel = None

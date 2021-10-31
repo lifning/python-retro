@@ -22,6 +22,35 @@ class LoadGameError(Exception):
 
 
 class EmulatedSystem:
+    """ This is the base class you should extend for your specific application, with any number of mix-ins from this
+    library or otherwise. Loading a core and game in an instance of this class alone may work, but it won't "do"
+    anything useful beyond writing the core's `retro_log` calls to stdout.
+
+    Standard libretro callbacks to override:
+        _environment(cmd, data) - called by the core for arbitrary functionality outside of the base libretro callbacks
+        _video_refresh(data, width, height, pitch) - called by the core with args describing its raw framebuffer data
+        _audio_sample(left, right) - called with a pair of signed 16-bit numbers representing a single audio sample
+        _audio_sample_batch(data, frames) - called with an array of stereo PCM data (less overhead than `_audio_sample`)
+        _input_poll() - called by the core to indicate that input devices should be polled for new inputs
+        _input_state(port, device, index, id) - called by the core to request the state of one button on one controller
+
+    Some environment() extensions are wrapped as overridable methods as well:
+        _get_system_directory() - called to request the path at which the core can find BIOS and related files
+        _get_save_directory() - called to request the path at which auxillary save data should be written
+        _set_geometry(base, max, ratio) - called to indicate the screen resolution the frontend should use
+        _set_timing(fps, sample_rate) - called to indicate the FPS and audio playback rate the frontend should use
+        _set_pixel_format(fmt) - called to indicate the pixel format of the framebuffer (XRGB1555, RGB565, or XRGB8888)
+        _log(level, msg) - called to request that the frontend write the given string somewhere appropriate
+
+    Wrapped versions of libretro API *frontend* calls provided:
+        load_game(data, path, meta)
+        unload()
+        serialize()
+        unserialize(state)
+        set_controller(port, device)
+        reset()
+        run()
+    """
     def __init__(self, libpath, **kw):
         self.llw = LowLevelWrapper(libpath)
         self.name = self.get_library_info()['name']
@@ -29,6 +58,8 @@ class EmulatedSystem:
 
         # HACK: just put this in for software frames 'til we support SET_HW_RENDER
         self.env_vars = {b'parallel-n64-gfxplugin': b'angrylion'}
+
+        self.__env_not_implemented = list()
 
         # todo: a layer of indirection to allow live monkey-patching?
         self._video_refresh_wrapper = retro_video_refresh_t(self._video_refresh)
@@ -53,6 +84,9 @@ class EmulatedSystem:
 
     def __del__(self):
         self.llw.deinit()
+        if self.__env_not_implemented:
+            print('all unhandled retro_environment cmds:\n\t{}'
+                  .format('\n\t'.join(str(rcl("ENVIRONMENT", cmd)) for cmd in self.__env_not_implemented)))
 
     def __set_geometry_wrapper(self) -> bool:
         return self._set_geometry(
@@ -212,7 +246,10 @@ class EmulatedSystem:
                 print('environment: could not set logging interface because C wrapper not loaded.')
                 return False
 
-        print(f'retro_environment not implemented: {rcl("ENVIRONMENT", cmd)}')
+        if cmd not in self.__env_not_implemented:
+            self.__env_not_implemented.append(cmd)
+            print(f'retro_environment not implemented: {rcl("ENVIRONMENT", cmd)}')
+
         return False
 
     def _log(self, level: int, msg: ctypes.c_char_p):
@@ -251,6 +288,16 @@ class EmulatedSystem:
 
 
 class TraceStubMixin(EmulatedSystem):
+    """
+    This mixin implements each callback in EmulatedSystem as follows:
+
+        def _some_cb(*args):
+            print(f"some_cb({args})")
+            return super()._some_cb(*args)
+
+    The upshot of this is that all libretro API calls passing through this mixin are logged to stdout.
+    """
+
     def _video_refresh(self, data: ctypes.c_void_p, width: int, height: int, pitch: int):
         print(f'video_refresh(data={id(data)}, width={width}, height={height}, pitch={pitch})')
         super()._video_refresh(data, width, height, pitch)

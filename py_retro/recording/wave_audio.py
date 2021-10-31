@@ -14,6 +14,8 @@ g_stereo_struct = struct.Struct('<hh')
 
 
 class WavFileAudioMixin(EmulatedSystem):
+    """ This mixin records audio samples received from the core to a 16-bit stereo PCM .WAV file.
+    To start recording, call `.wav_record(wav_file)`."""
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__wav = None

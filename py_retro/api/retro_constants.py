@@ -247,4 +247,4 @@ for _name, _value in vars().copy().items():
 
 # _retro_constant_lookup abbreviation for concise logging
 def rcl(prefix, value):
-    return _retro_constant_lookup.get(prefix, {}).get(value, value)
+    return _retro_constant_lookup.get(prefix, {}).get(value, hex(value))

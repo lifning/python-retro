@@ -6,6 +6,10 @@ from .retro_ctypes import retro_environment_t, retro_video_refresh_t, retro_audi
 
 
 class LowLevelWrapper(ctypes.CDLL):
+    """ This class contains the raw ctypes FFI bindings to the libretro API.
+    For brevity, all functions that usually start with `retro_` are aliased to not require that prefix as methods here;
+    i.e. `llw.retro_run()` and `llw.run()` are equivalent.
+    """
     def __init__(self, libpath):
         ctypes.CDLL.__init__(self, libpath)
 

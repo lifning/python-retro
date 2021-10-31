@@ -53,6 +53,9 @@ class GameInfoReader:
 
 
 class MemoryOpsMixin(EmulatedSystem):
+    """ This mixin includes methods useful for inspecting and manipulating the state of the emulated console's memory,
+    including work RAM, save RAM, and ROM, via either direct programmatic access or using `retro_cheat_set`.
+    """
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self._loaded_cheats = {}

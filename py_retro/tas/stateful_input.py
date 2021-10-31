@@ -10,6 +10,10 @@ def _recursive_defaultdict(depth, last_factory):
 
 
 class StatefulInputMixin(EmulatedSystem):
+    """ This mixin trivially returns in _input_state(...) whatever value has been set for the given gamepad button by
+    `set_input_state(..., state)`, or 0 if there hasn't been a state set for that button.
+    This exists as a convenience for programmatically setting the controller state from code that's not necessarily
+    a part of this object's class hierarchy."""
     def __init__(self, libpath: str, **kw):
         super().__init__(libpath, **kw)
         self.__storage = _recursive_defaultdict(4, int)

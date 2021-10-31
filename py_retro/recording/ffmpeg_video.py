@@ -17,6 +17,11 @@ pixel_format_ffmpeg_names = {
 
 class FfmpegVideoMixin(PygameVideoMixin):
     def __init__(self, libpath, **kw):
+        """ This mixin pipes raw video frames to a forked ffmpeg process into an uncompressed video file.
+        To begin recording, call `.video_record(output_file)`.
+
+        An implementation detail: it uses pygame.Surface to efficiently convert to a pixel format supported by ffmpeg,
+        which means PygameVideoMixin will also be included in the class hierarchy above it."""
         super().__init__(libpath, **kw)
         pygame.display.init()
         self.__framebuffer = None

@@ -11,6 +11,8 @@ g_stereo_channels = 2
 
 
 class PortaudioMixin(EmulatedSystem):
+    """ This mixin plays audio provided by the core using the PyAudio bindings to the PortAudio library.
+    """
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__pyaudio = pyaudio.PyAudio()

@@ -36,6 +36,9 @@ g_button_map = {
 
 
 class PygameJoystickMixin(EmulatedSystem):
+    """ This mixin provides inputs from a connected HID gamepad via the pygame.joystick API.
+    The mappings it uses are appropriate for an XInput device's button layout.
+    """
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__joystick = None

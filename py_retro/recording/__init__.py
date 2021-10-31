@@ -8,6 +8,17 @@ from .wave_audio import WavFileAudioMixin
 
 
 class AVRecorderSystem(FfmpegVideoMixin, WavFileAudioMixin):
+    """ This mixin combines the FfmpegVideoMixin and WavFileAudioMixin to provide an ergonomic interface for recording
+    and encoding both audio and video into one container.
+    To record, use the ContextManager returned by `.av_record(out_file)`, which you can easily do in a `with` block:
+
+        with emu.av_record('output.mkv'):
+            while running:
+                emu.run()
+                # ...
+
+    When the ContextManager exits, ffmpeg will be invoked again to encode and multiplex the raw video and WAV streams.
+    """
     @contextmanager
     def av_record(self, output_file, video_params=(), audio_params=()):
         temp_name = tempfile.mktemp()

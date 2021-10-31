@@ -47,6 +47,9 @@ INPUT_POLL_SET = struct.Struct('<4sh')
 
 
 class TilRecorderInputMixin(EmulatedSystem):
+    """ This mixin wraps calls to super()._input_state(...) from other mixins and records their return values in a
+    streamable file format for later playback. Consult the module-level documentation of `til_input` for details about
+    the file format itself."""
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__handle = None
@@ -113,6 +116,8 @@ class TilRecorderInputMixin(EmulatedSystem):
 
 
 class TilPlayerInputMixin(EmulatedSystem):
+    """ This mixin reads files produced by TilRecorderInputMixin and replays the log of inputs in sequential calls
+    made by the core to `_input_state(...)`."""
     def __init__(self, libpath, **kw):
         super().__init__(libpath, **kw)
         self.__handle = None
